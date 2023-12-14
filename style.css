@@ -1165,13 +1165,12 @@ border: 1px solid #bababa;
 
   }
   #pagination {
-    text-align: center;
-    display: flex;
-    align-content: space-between;
-    flex-direction: inherit;
-    flex-wrap: wrap;
-    justify-content: center;
-
+  width: 70%;
+  text-align: start;
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: 50px;
+  justify-content: space-evenly;
 }
 
  /*Watches*/
