@@ -664,6 +664,10 @@ color: #fff;
 font-weight: 600;
 margin-top: 5px;
 }
+#pagination a.p1{
+ background-color: #5f5f5f;
+
+}
 
 #pagination a i{
 font-size: 16px;
