@@ -11,38 +11,7 @@
         <link rel="stylesheet" href="style.css">
     </head>
 
-    <body> 
-        <!-- Messenger საუბრის დანამატი Code -->
-    <div id="fb-root"></div>
-
-    <!-- Your საუბრის დანამატი code -->
-    <div id="fb-customer-chat" class="fb-customerchat">
-    </div>
-
-    <script>
-      var chatbox = document.getElementById('fb-customer-chat');
-      chatbox.setAttribute("page_id", "581207708752069");
-      chatbox.setAttribute("attribution", "biz_inbox");
-    </script>
-
-    <!-- Your SDK code -->
-    <script>
-      window.fbAsyncInit = function() {
-        FB.init({
-          xfbml            : true,
-          version          : 'v18.0'
-        });
-      };
-
-      (function(d, s, id) {
-        var js, fjs = d.getElementsByTagName(s)[0];
-        if (d.getElementById(id)) return;
-        js = d.createElement(s); js.id = id;
-        js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
-        fjs.parentNode.insertBefore(js, fjs);
-      }(document, 'script', 'facebook-jssdk'));
-    </script> 
-        
+    <body>
         <section id="header">
             <a href="#"><img height="40px" width="140px"
                     src="img/image00001.png" class="logo" alt onclick="window.location.href='allsunglasses.html'"> </a>
