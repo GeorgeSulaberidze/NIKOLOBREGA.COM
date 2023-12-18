@@ -107,32 +107,37 @@
 </footer>
 <script src="script.js"></script>
 <script>
-    window.fbAsyncInit = function () {
-        FB.init({
-            appId: '581207708752069',
-            xfbml: true,
-            version: 'v18.0',
-        });
+    function loadFacebookSDK() {
+        window.fbAsyncInit = function() {
+            FB.init({
+                xfbml: true,
+                version: 'v18.0'
+            });
 
-        // Check if FB is initialized
-        if (typeof FB !== 'undefined') {
-            var chatbox = document.getElementById('fb-customer-chat');
-            chatbox.setAttribute("page_id", "581207708752069");
-            chatbox.setAttribute("attribution", "biz_inbox");
-        } else {
-            console.error('Facebook SDK not initialized.');
-        }
+            // Check if FB is initialized and set up the chatbox
+            if (typeof FB !== 'undefined') {
+                var chatbox = document.getElementById('fb-customer-chat');
+                chatbox.setAttribute("page_id", "581207708752069");
+                chatbox.setAttribute("attribution", "biz_inbox");
+            } else {
+                console.error('Facebook SDK not initialized.');
+            }
+        };
+
+        // Dynamically load the Facebook SDK script
+        (function(d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) return;
+            js = d.createElement(s); js.id = id;
+            js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    }
+
+
+    window.onload = function() {
+        setTimeout(loadFacebookSDK, 1000);
     };
-
-    (function (d, s, id) {
-        var js, fjs = d.getElementsByTagName(s)[0];
-        if (d.getElementById(id)) return;
-        js = d.createElement(s);
-        js.id = id;
-        js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
-        fjs.parentNode.insertBefore(js, fjs);
-    }(document, 'script', 'facebook-jssdk'));
-
 </script>
 </body>
 </html>
