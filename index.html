@@ -12,12 +12,6 @@
 </head>
 
 <body>
-<!-- Messenger საუბრის დანამატი Code -->
-<div id="fb-root"></div>
-
-<!-- Your საუბრის დანამატი code -->
-<div id="fb-customer-chat" class="fb-customerchat">
-</div>
 
 <section id="header">
     <a href="#"><img height="40px" width="140px"
@@ -106,38 +100,36 @@
     </div>
 </footer>
 <script src="script.js"></script>
-<script>
-    function loadFacebookSDK() {
-        window.fbAsyncInit = function() {
-            FB.init({
-                xfbml: true,
-                version: 'v18.0'
-            });
 
-            // Check if FB is initialized and set up the chatbox
-            if (typeof FB !== 'undefined') {
-                var chatbox = document.getElementById('fb-customer-chat');
-                chatbox.setAttribute("page_id", "581207708752069");
-                chatbox.setAttribute("attribution", "biz_inbox");
-            } else {
-                console.error('Facebook SDK not initialized.');
-            }
-        };
+<!-- Messenger საუბრის დანამატი Code -->
+    <div id="fb-root"></div>
 
-        // Dynamically load the Facebook SDK script
-        (function(d, s, id) {
-            var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) return;
-            js = d.createElement(s); js.id = id;
-            js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
-            fjs.parentNode.insertBefore(js, fjs);
-        }(document, 'script', 'facebook-jssdk'));
-    }
+    <!-- Your საუბრის დანამატი code -->
+    <div id="fb-customer-chat" class="fb-customerchat">
+    </div>
 
+    <script>
+      var chatbox = document.getElementById('fb-customer-chat');
+      chatbox.setAttribute("page_id", "581207708752069");
+      chatbox.setAttribute("attribution", "biz_inbox");
+    </script>
 
-    window.onload = function() {
-        setTimeout(loadFacebookSDK, 1000);
-    };
-</script>
+    <!-- Your SDK code -->
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+          xfbml            : true,
+          version          : 'v18.0'
+        });
+      };
+
+      (function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s); js.id = id;
+        js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
+        fjs.parentNode.insertBefore(js, fjs);
+      }(document, 'script', 'facebook-jssdk'));
+    </script>
 </body>
 </html>
