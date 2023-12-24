@@ -117,7 +117,17 @@
 
             </select>
             <input type="number" value="1">
-            <button class="normal">Add To Cart</button>
+            <button class="normal" onclick="showFrame()"  >Add To Cart</button>
+            <div id="maintenanceFrame" class="hidden">
+                <div class="frameContent">
+                    <p class="frame">Hello. at this stage, it is not possible to buy products from the site, please write to us in messenger.</p>
+                    <p class="frame">გამარჯობა. ამ ეტაპზე საიტიდან პროდუქციის შეძენა არ არის შესაძლებელი, შესაძენად გთხოვთ მოგვწეროთ მესენჯერში. </p>
+                    
+                    <button class="frame" onclick="hideFrame()">Close</button>
+                </div>
+            </div>
+            
+            <script src="script.js"></script>
             <h4>Product Details</h4>
             <span>Made of walnut tree wood, sunglasses are distinguished by a progressive approach to form, construction, and surface.
             Handcrafted modern design meets advanced technology to make high-performance eyewear with a refined and distinctive
