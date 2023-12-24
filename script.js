@@ -14,3 +14,11 @@ if (close) {
    nav.classList.remove('active');
     })
 }
+
+function showFrame() {
+    document.getElementById('maintenanceFrame').style.display = 'block';
+}
+
+function hideFrame() {
+    document.getElementById('maintenanceFrame').style.display = 'none';
+}
