@@ -348,7 +348,50 @@ body {
 
 }
 
-
+#maintenanceFrame {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.182), rgba(255, 255, 255, 0.105));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border:1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    position: fixed;
+    top: 50%;
+    left: 30%;
+    width: 40%;
+    transition: 0.5s;
+    
+  }
+  p.frame {
+    font-size: 16px;
+    color: #000000;
+    margin: 15px 0 20px 0;
+    background: linear-gradient(135deg, rgb(255 255 255 / 0%), rgb(255 255 255 / 0%));
+    
+  }
+  
+  .frameContent {
+    text-align: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border:1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    
+  }
+  
+  button.frame {
+    padding: 10px;
+    margin-top: -10px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border:1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    margin-bottom: 5px;
+}
 
 #banner {
   display: flex;
@@ -1256,6 +1299,36 @@ flex-wrap: wrap;
   padding: 14px;
 }
 
+/* Shop Page*/
+#maintenanceFrame {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.182), rgba(255, 255, 255, 0.105));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border:1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  position: fixed;
+  top: 50%;
+  left: 5%;
+  width: 90%;
+  transition: 0.5s;
+}
 
+.frameContent {
+  text-align: center;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+p.frame {
+  font-size: 16px;
+  color: #000000;
+  margin: 15px 0 20px 0;
+  background: linear-gradient(135deg, rgb(255 255 255 / 0%), rgb(255 255 255 / 0%));
+  
+}
 
 }
