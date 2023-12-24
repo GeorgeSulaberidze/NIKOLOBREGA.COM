@@ -1331,4 +1331,8 @@ p.frame {
   
 }
 
+.hidden {
+  display: none;
+}
+
 }
