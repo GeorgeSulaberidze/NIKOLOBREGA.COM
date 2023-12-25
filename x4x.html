@@ -107,7 +107,7 @@
             <div class="single-pro-details">
              <h6> Home / X4X</h6>
              <h4>Gender - Unysex</h4>
-             <h2>500GEL</h2>
+             <h2>499GEL</h2>
             <select>
                <option>Select Size</option>
                <option>Small - 135MM</option>
@@ -117,7 +117,39 @@
 
             </select>
             <input type="number" value="1">
-            <button class="normal">Add To Cart</button>
+            <button id="addToCartButton" class="normal" onclick="showFrame()"  >Add To Cart</button>
+            <div id="maintenanceFrame" class="hidden">
+                <div class="frameContent">
+                    <p class="frame">Hello. at this stage, it is not possible to buy products from the site, please write to us in messenger.</p>
+                    <p class="frame">გამარჯობა. ამ ეტაპზე საიტიდან პროდუქციის შეძენა არ არის შესაძლებელი, შესაძენად გთხოვთ მოგვწეროთ მესენჯერში. </p>
+                    
+                    <button class="frame" onclick="hideFrame()">Close</button>
+                </div>
+            </div>
+            
+            <script>
+   // Function to show the frame
+   function showFrame() {
+     var maintenanceFrame = document.getElementById("maintenanceFrame");
+     maintenanceFrame.classList.remove("hidden");
+   }
+
+   // Function to hide the frame
+   function hideFrame() {
+     var maintenanceFrame = document.getElementById("maintenanceFrame");
+     maintenanceFrame.classList.add("hidden");
+   }
+
+   document.addEventListener('DOMContentLoaded', function () {
+     // Add event listener to the "Add To Cart" button
+     var addToCartButton = document.getElementById('addToCartButton');
+     addToCartButton.addEventListener('click', showFrame);
+
+     // Add event listener to the "Close" button inside the frame
+     var closeFrameButton = document.querySelector('#maintenanceFrame .frame');
+     closeFrameButton.addEventListener('click', hideFrame);
+   });
+</script>
             <h4>Product Details</h4>
             <span>Made of walnut tree wood, sunglasses are distinguished by a progressive approach to form, construction, and surface.
             Handcrafted modern design meets advanced technology to make high-performance eyewear with a refined and distinctive
