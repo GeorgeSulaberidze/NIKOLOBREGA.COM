@@ -1234,6 +1234,7 @@ border: 1px solid #bababa;
 #prodetails .single-pro-image {
   width: 100%;
   margin-right: 0px;
+  border: 1px solid #cce7d0;
 }
 #prodetails .single-pro-details {
   width: 100%;
