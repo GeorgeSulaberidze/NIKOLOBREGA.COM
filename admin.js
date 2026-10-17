@@ -141,6 +141,53 @@
     template.querySelector('.single-pro-details span').innerHTML = description;
     return `<!DOCTYPE html>\n${template.documentElement.outerHTML}`;
   }
+
+  async function makeCategoryPageFiles(category, products) {
+    const baseResponse = await fetch(`${category}.html`, { cache: 'no-store' });
+    if (!baseResponse.ok) throw new Error(`${category}.html კატეგორიის გვერდი ვერ ჩაიტვირთა.`);
+    const baseDocument = new DOMParser().parseFromString(await baseResponse.text(), 'text/html');
+    const pagePaths = new Map([[1, `${category}.html`]]);
+    baseDocument.querySelectorAll('#pagination a[onclick]').forEach(link => {
+      const match = link.getAttribute('onclick')?.match(/window\.location\.href\s*=\s*['"]([^'"]+\.html)['"]/i);
+      if (!match) return;
+      const file = match[1].split('/').pop();
+      const pageMatch = file.match(new RegExp(`^${category}(\\d*)\\.html$`, 'i'));
+      if (!pageMatch) return;
+      pagePaths.set(Number(pageMatch[1] || 1), file);
+    });
+    const basePageCount = Math.max(1, ...pagePaths.keys());
+    const pageDocuments = [];
+    for (let number = 1; number <= basePageCount; number += 1) {
+      let pageDocument = baseDocument;
+      if (number !== 1) {
+        const pagePath = pagePaths.get(number) || `${category}${number}.html`;
+        const pageResponse = await fetch(pagePath, { cache: 'no-store' });
+        if (!pageResponse.ok) throw new Error(`${pagePath} კატეგორიის გვერდი ვერ ჩაიტვირთა.`);
+        pageDocument = new DOMParser().parseFromString(await pageResponse.text(), 'text/html');
+      }
+      pageDocuments.push(pageDocument);
+    }
+
+    const staticCounts = pageDocuments.map(page => page.querySelectorAll('#product1 .pro-container > .pro').length);
+    const dynamicCapacity = staticCounts.reduce((sum, count) => sum + Math.max(0, 20 - count), 0);
+    const productCount = products.filter(product => product.category === category).length;
+    const extraPages = Math.ceil(Math.max(0, productCount - dynamicCapacity) / 20);
+    if (!extraPages) return [];
+
+    const template = pageDocuments[pageDocuments.length - 1];
+    const files = [];
+    for (let pageNumber = basePageCount + 1; pageNumber <= basePageCount + extraPages; pageNumber += 1) {
+      const page = new DOMParser().parseFromString(template.documentElement.outerHTML, 'text/html');
+      page.querySelectorAll('#product1 .pro-container > .pro').forEach(card => card.remove());
+      page.body.dataset.catalogBasePages = String(basePageCount);
+      const path = category === 'woodens'
+        ? `${category}${pageNumber}.html`
+        : `${category}-page-${pageNumber}.html`;
+      files.push({ path, content: `<!DOCTYPE html>\n${page.documentElement.outerHTML}` });
+    }
+    return files;
+  }
+
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const name = document.querySelector('#name').value.trim();
@@ -167,6 +214,12 @@
         throw new Error('გახსენით პანელი საიტის HTTPS მისამართიდან. პირდაპირ ფაილის გახსნისას არსებული პროდუქტების სიის შენარჩუნება შეუძლებელია.');
       }
       if (!Array.isArray(products)) products = [];
+      const now = Date.now();
+      const legacyProducts = products.filter(item => !Number.isFinite(Date.parse(item.createdAt || '')));
+      legacyProducts.reverse().forEach((item, index) => {
+        item.createdAt = new Date(now - (index + 1) * 1000).toISOString();
+      });
+      products.sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
       const existingProductIndex = products.findIndex(product => product.slug === slug);
 
       const images = selectedFiles.map((file, index) => {
@@ -175,13 +228,16 @@
       });
       const product = {
         slug, name, category, price, images,
-        description
+        description,
+        createdAt: new Date(now).toISOString()
       };
-      if (existingProductIndex >= 0) products[existingProductIndex] = product;
-      else products.push(product);
+      if (existingProductIndex >= 0) products.splice(existingProductIndex, 1);
+      products.unshift(product);
+      const categoryPages = await makeCategoryPageFiles(category, products);
       const uploadFiles = [
         { path: 'products.json', content: JSON.stringify(products, null, 2) },
         { path: `${slug}.html`, content: await makeProductPage(product) },
+        ...categoryPages,
         ...selectedFiles.map((file, index) => ({ path: images[index], content: file, binary: true }))
       ];
       await uploadProduct(token, uploadFiles);
