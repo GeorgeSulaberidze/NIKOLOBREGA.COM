@@ -15,8 +15,18 @@
       const details = document.createElement('div'); details.className = 'des';
       const brand = document.createElement('span'); brand.textContent = 'NIKOLO BREGA';
       const name = document.createElement('h5'); name.textContent = product.name;
+      const stars = document.createElement('div'); stars.className = 'star';
+      for (let index = 0; index < 8; index += 1) {
+        const star = document.createElement('i'); star.className = 'fas fa-star';
+        stars.append(star);
+      }
       const price = document.createElement('h4'); price.textContent = product.price + 'GEL';
-      details.append(brand, name, price); card.append(image, details); container.append(card);
+      details.append(brand, name, stars, price);
+      const cartLink = document.createElement('a'); cartLink.href = '#';
+      cartLink.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); });
+      const cartIcon = document.createElement('i'); cartIcon.className = 'fal fa-shopping-cart cart';
+      cartLink.append(cartIcon);
+      card.append(image, details, cartLink); container.append(card);
     });
   } catch (error) {
     console.info('New product list is available when the site is served over HTTP/HTTPS.');
