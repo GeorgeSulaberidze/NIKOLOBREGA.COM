@@ -1,3 +1,13 @@
 [
-  
+  {
+    "slug": "nk44",
+    "name": "NK44",
+    "category": "woodens",
+    "price": "399",
+    "images": [
+      "CATALOG/nk44-1.jpg",
+      "CATALOG/nk44-2.jpg"
+    ],
+    "description": "Made of walnut tree wood, sunglasses are distinguished by a progressive approach to form, construction, and surface. Handcrafted modern design meets advanced technology to make high-performance eyewear with a refined and distinctive look. Polarised, gradient or photochromic as well as the silver logo on the side - all sunglasses offer total defence from UV rays and maximum glare protection"
+  }
 ]
