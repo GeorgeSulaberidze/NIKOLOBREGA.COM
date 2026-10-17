@@ -4,14 +4,69 @@ const nav = document.getElementById('navbar');
 
 const pendingImages = [];
 let imageLoadActive = false;
+let loadingMessageTimer = null;
+let loadingMessage = null;
+
+function updateProductLoadingMessage() {
+    if (imageLoadActive || pendingImages.length > 0) {
+        if (loadingMessageTimer || loadingMessage) return;
+        loadingMessageTimer = window.setTimeout(() => {
+            loadingMessageTimer = null;
+            if (!imageLoadActive && pendingImages.length === 0) return;
+
+            if (!document.getElementById('product-image-loading-style')) {
+                const style = document.createElement('style');
+                style.id = 'product-image-loading-style';
+                style.textContent = `
+                    @keyframes product-image-loading-blink { 50% { opacity: .35; } }
+                    #product-image-loading-message {
+                        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                        z-index: 10000; padding: 12px 22px; border-radius: 8px;
+                        background: rgba(20, 20, 20, .82); color: #fff;
+                        font-family: inherit; font-size: 18px; font-weight: 600; line-height: 1.4;
+                        box-shadow: 0 4px 18px rgba(0, 0, 0, .2);
+                        pointer-events: none; animation: product-image-loading-blink 1s ease-in-out infinite;
+                    }
+                    @media (prefers-reduced-motion: reduce) {
+                        #product-image-loading-message { animation: none; }
+                    }
+                `;
+                document.head.append(style);
+            }
+
+            loadingMessage = document.createElement('div');
+            loadingMessage.id = 'product-image-loading-message';
+            loadingMessage.setAttribute('role', 'status');
+            loadingMessage.setAttribute('aria-live', 'polite');
+            loadingMessage.textContent = 'იტვირთება...';
+            document.body.append(loadingMessage);
+        }, 1200);
+        return;
+    }
+
+    if (loadingMessageTimer) {
+        window.clearTimeout(loadingMessageTimer);
+        loadingMessageTimer = null;
+    }
+    loadingMessage?.remove();
+    loadingMessage = null;
+}
 
 function processNextImage() {
-    if (imageLoadActive || pendingImages.length === 0) return;
+    if (imageLoadActive) return;
+    if (pendingImages.length === 0) {
+        updateProductLoadingMessage();
+        return;
+    }
     const image = pendingImages.shift();
     const source = image.dataset.src;
-    if (!source) return processNextImage();
+    if (!source) {
+        processNextImage();
+        return;
+    }
 
     imageLoadActive = true;
+    updateProductLoadingMessage();
     image.loading = 'eager';
     image.decoding = 'async';
     let finished = false;
@@ -38,6 +93,7 @@ window.enqueueImages = images => {
         image.dataset.imageQueued = 'true';
         pendingImages.push(image);
     });
+    updateProductLoadingMessage();
     processNextImage();
 };
 
