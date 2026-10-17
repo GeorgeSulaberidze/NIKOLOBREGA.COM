@@ -13,6 +13,8 @@
   };
   const safeSlug = value => value.toLowerCase().trim()
     .replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
+  const hasGeorgian = value => /[\u10A0-\u10FF]/.test(value);
+  const hasEnglish = value => /\b(?:the|a|an|and|or|is|are|made|with|for|from|by|of|this|our|high|quality|handmade|wood|leather|watch|sunglasses|design|product|material|comes|includes|features|light|comfortable|premium|polarized)\b/i.test(value);
   const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[char]);
@@ -52,7 +54,9 @@
   function makeProductPage(product) {
     const images = product.images;
     const thumbs = images.map((src, index) => `<button class="thumb" type="button" aria-label="ფოტო ${index + 1}" onclick="document.getElementById('main-photo').src='${src}'"><img src="${src}" alt="${escapeHtml(product.name)}"></button>`).join('\n');
-    const description = escapeHtml(product.description).replace(/\n/g, '<br>');
+    const description = product.descriptionEn && product.descriptionKa
+      ? `${escapeHtml(product.descriptionEn).replace(/\n/g, '<br>')}<br><br><strong>ქართულად:</strong> ${escapeHtml(product.descriptionKa).replace(/\n/g, '<br>')}`
+      : escapeHtml(product.description || '').replace(/\n/g, '<br>');
     return `<!doctype html>
 <html lang="ka"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(product.name)} | NIKOLO BREGA</title><link rel="stylesheet" href="style.css"><style>
 .new-product{max-width:1100px;margin:44px auto;padding:0 22px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:42px}.new-product img{display:block;width:100%;object-fit:cover}.main-photo{aspect-ratio:1/1}.thumbs{display:flex;gap:10px;margin-top:10px}.thumb{border:1px solid #ddd;background:white;padding:0;width:76px;cursor:pointer}.thumb img{aspect-ratio:1}.product-copy h1{font-size:30px;margin:8px 0 12px}.product-price{font-size:27px;font-weight:700;margin:14px 0 26px}.product-description{line-height:1.8;color:#555;white-space:normal}.back-link{display:inline-block;margin-bottom:24px;color:#555}.product-category{color:#888;font-size:13px}@media(max-width:700px){.new-product{grid-template-columns:1fr;gap:25px;margin:24px auto;padding:0 16px}.product-copy h1{font-size:25px}.thumb{width:64px}}
@@ -64,11 +68,20 @@
     const name = document.querySelector('#name').value.trim();
     const category = document.querySelector('#category').value;
     const price = document.querySelector('#price').value.trim();
-    const description = document.querySelector('#description').value.trim();
+    const descriptionEn = document.querySelector('#description-en').value.trim();
+    const descriptionKa = document.querySelector('#description-ka').value.trim();
     const slug = safeSlug(slugInput.value);
     if (!window.JSZip) return setMessage('პაკეტის შემქმნელი ვერ ჩაიტვირთა. შეამოწმეთ ინტერნეტი და სცადეთ თავიდან.', 'error');
-    if (!name || !description || !price || !slug || selectedFiles.length < 1 || selectedFiles.length > 4) {
-      return setMessage('შეავსეთ ყველა ველი და დაამატეთ 1-დან 4-მდე ფოტო.', 'error');
+    if (!name || !price || !slug || selectedFiles.length < 1 || selectedFiles.length > 4) {
+      return setMessage('შეავსეთ სახელი, ფასი და ფაილის სახელი; დაამატეთ 1-დან 4-მდე ფოტო.', 'error');
+    }
+    if (!descriptionEn && !descriptionKa) return setMessage('შეავსეთ აღწერა ინგლისურად და ქართულად.', 'error');
+    const englishFieldBilingual = hasGeorgian(descriptionEn) && hasEnglish(descriptionEn);
+    const georgianFieldBilingual = hasGeorgian(descriptionKa) && hasEnglish(descriptionKa);
+    const existingBilingualText = englishFieldBilingual ? descriptionEn : georgianFieldBilingual ? descriptionKa : '';
+    const hasSeparateDescriptions = Boolean(descriptionEn && descriptionKa && !existingBilingualText);
+    if (!hasSeparateDescriptions && !existingBilingualText) {
+      return setMessage('აღწერის ორივე ენა დაამატეთ. თუ ორივე ენა ერთ ტექსტშია, ჩასვით ერთ ველში.', 'error');
     }
     if (selectedFiles.length === 0) return setMessage('ატვირთეთ პროდუქტის მინიმუმ ერთი ფოტო.', 'error');
     const button = document.querySelector('#submit'); button.disabled = true;
@@ -90,7 +103,12 @@
         const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
         return `CATALOG/${slug}-${index + 1}.${extension}`;
       });
-      const product = { slug, name, category, price, description, images };
+      const product = {
+        slug, name, category, price, images,
+        ...(hasSeparateDescriptions
+          ? { descriptionEn, descriptionKa }
+          : { description: existingBilingualText })
+      };
       products.push(product);
       zip.file('products.json', JSON.stringify(products, null, 2));
       zip.file(`${slug}.html`, makeProductPage(product));
