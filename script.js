@@ -24,17 +24,16 @@ function hideFrame() {
 }
 
 function showMessengerButton(button) {
-    if (button.dataset.switching === 'true') return;
-    button.dataset.switching = 'true';
-    button.classList.add('is-switching');
+    if (button.dataset.messengerReady === 'true') {
+        window.open('https://m.me/581207708752069', '_blank', 'noopener');
+        return;
+    }
 
+    button.dataset.messengerReady = 'true';
+    button.classList.add('is-switching');
     window.setTimeout(() => {
-        const link = document.createElement('a');
-        link.className = 'messenger-link messenger-link-enter';
-        link.href = 'https://m.me/581207708752069';
-        link.target = '_blank';
-        link.rel = 'noopener';
-        link.textContent = 'შესაძენად მოგვწერეთ მესენჯერში';
-        button.replaceWith(link);
+        button.textContent = 'შესაძენად მოგვწერეთ მესენჯერში';
+        button.classList.remove('normal', 'is-switching');
+        button.classList.add('messenger-link', 'messenger-link-enter');
     }, 170);
 }
