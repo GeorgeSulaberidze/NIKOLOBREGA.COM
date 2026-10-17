@@ -17,6 +17,27 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[char]);
 
+  async function optimizeImage(file) {
+    if (!window.createImageBitmap || !HTMLCanvasElement.prototype.toBlob) return file;
+    let bitmap;
+    try {
+      bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+      if (!blob || blob.size >= file.size) return file;
+      const baseName = file.name.replace(/\.[^.]+$/, '');
+      return new File([blob], `${baseName}.webp`, { type: 'image/webp', lastModified: Date.now() });
+    } catch {
+      return file;
+    } finally {
+      bitmap?.close();
+    }
+  }
+
   const githubOwner = 'GeorgeSulaberidze';
   const githubRepo = 'NIKOLOBREGA.COM';
   const githubBranch = 'main';
@@ -112,7 +133,7 @@
     });
   };
 
-  photos.addEventListener('change', () => {
+  photos.addEventListener('change', async () => {
     const incoming = Array.from(photos.files || []);
     if (incoming.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type))) {
       setMessage('გამოიყენეთ JPG, PNG ან WebP ფორმატის ფოტოები.', 'error'); photos.value = ''; return;
@@ -120,7 +141,11 @@
     if (incoming.some(file => file.size > 10 * 1024 * 1024)) {
       setMessage('თითოეული ფოტო 10 MB-ზე ნაკლები უნდა იყოს.', 'error'); photos.value = ''; return;
     }
-    selectedFiles = [...selectedFiles, ...incoming].slice(0, 4);
+    photos.disabled = true;
+    setMessage('ფოტოები ატვირთვამდე მცირდება…', 'info');
+    const optimized = await Promise.all(incoming.map(optimizeImage));
+    selectedFiles = [...selectedFiles, ...optimized].slice(0, 4);
+    photos.disabled = false;
     photos.value = '';
     renderPreview();
     message.className = 'message';
@@ -136,9 +161,12 @@
     const mainImage = template.querySelector('#MainImg');
     mainImage.setAttribute('src', images[0] || '');
     mainImage.setAttribute('alt', product.name);
+    mainImage.setAttribute('decoding', 'async');
     imageElements.forEach((image, index) => {
       image.setAttribute('src', images[index] || '');
       image.setAttribute('alt', `${product.name} — ფოტო ${index + 1}`);
+      image.setAttribute('loading', 'lazy');
+      image.setAttribute('decoding', 'async');
       image.closest('.small-img-col').hidden = !images[index];
     });
     template.querySelector('.single-pro-details h6').textContent = ` Home / ${product.name}`;
