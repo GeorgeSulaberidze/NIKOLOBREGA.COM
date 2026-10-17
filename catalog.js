@@ -62,8 +62,7 @@
     const card = document.createElement('div');
     card.className = 'pro';
     card.addEventListener('click', () => { location.href = product.slug + '.html'; });
-    const image = document.createElement('img'); image.src = product.images[0]; image.alt = product.name;
-    image.loading = 'lazy'; image.decoding = 'async';
+    const image = document.createElement('img'); image.dataset.src = product.images[0]; image.alt = product.name;
     const details = document.createElement('div'); details.className = 'des';
     const brand = document.createElement('span'); brand.textContent = 'NIKOLO BREGA';
     const name = document.createElement('h5'); name.textContent = product.name;
@@ -110,10 +109,6 @@
       const target = card.getAttribute('onclick')?.match(/(?:location\.href|window\.location\.href)\s*=\s*['"]([^'"]+)['"]/i)?.[1];
       return !target || !adminSlugs.has(target.split('/').pop().toLowerCase());
     });
-    catalogCards.forEach(card => card.querySelectorAll('img').forEach(image => {
-      image.loading = 'lazy';
-      image.decoding = 'async';
-    }));
     const allCards = [...categoryProducts.map(makeCard), ...catalogCards];
     const pageCount = Math.max(1, Math.ceil(allCards.length / 20));
     const pageCards = allCards.slice((pageNumber - 1) * 20, pageNumber * 20);
@@ -121,5 +116,11 @@
     renderPagination(pageCount, basePageCount, pagePaths);
   } catch (error) {
     console.info('New product list is available when the site is served over HTTP/HTTPS.', error);
+  } finally {
+    if (window.enqueueImages) {
+      const gridImages = Array.from(container.querySelectorAll('img[data-src]'));
+      const queued = new Set(gridImages);
+      window.enqueueImages([...gridImages, ...Array.from(document.querySelectorAll('img[data-src]')).filter(image => !queued.has(image))]);
+    }
   }
 })();

@@ -159,11 +159,13 @@
     const imageElements = template.querySelectorAll('.small-img');
     template.title = `${product.name} | NIKOLO BREGA`;
     const mainImage = template.querySelector('#MainImg');
-    mainImage.setAttribute('src', images[0] || '');
+    mainImage.removeAttribute('src');
+    mainImage.dataset.src = images[0] || '';
     mainImage.setAttribute('alt', product.name);
     mainImage.setAttribute('decoding', 'async');
     imageElements.forEach((image, index) => {
-      image.setAttribute('src', images[index] || '');
+      image.removeAttribute('src');
+      image.dataset.src = images[index] || '';
       image.setAttribute('alt', `${product.name} — ფოტო ${index + 1}`);
       image.setAttribute('loading', 'lazy');
       image.setAttribute('decoding', 'async');
