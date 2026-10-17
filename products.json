@@ -1,5 +1,18 @@
 [
   {
+    "slug": "silver-snake-one",
+    "name": "SILVER SNAKE ONE",
+    "category": "woodens",
+    "price": "1499",
+    "images": [
+      "CATALOG/silver-snake-one-1.png",
+      "CATALOG/silver-snake-one-2.png",
+      "CATALOG/silver-snake-one-3.png"
+    ],
+    "description": "სათვალე აღჭურვილია მაღალი ხარისხის პოლარიზებული შუშით.(UVA, UVB და UVC ულტრაიისფერ გამოსხივებას 100% ით ბლოკავს). ძალიან მსუბუქია და კომფორტული. კაკლის ხისგან არის დამზადებული.თითოეული დეტალი მუშავდება ხელით უმაღლეს დონეზე.ბრენდი NIKOLO BREGA აწერია ვერცხლის ფირფიტაზე.ასევე გველის ფორმები დამზადებულია ვერცხლით.მოყვება, მყარი სათვალის ჩასადები, მუყაოს დაბრენილი ყუთი,საწმენდი და სათვალის საბუთი.\nდამზადებულია საქართველოში.\nშეგიძლიათ ისარგებლოთ საქართველო ან თიბისი ბანკის ნაწილ-ნაწილ გადახდით.\n\nMade of walnut tree wood, sunglasses are distinguished by a progressive approach to form, construction, and surface. Handcrafted modern design meets advanced technology to make high-performance eyewear with a refined and distinctive look. Polarised, gradient or photochromic as well as the silver logo on the side - all sunglasses offer total defence from UV rays and maximum glare protection",
+    "createdAt": "2026-10-17T13:27:44.347Z"
+  },
+  {
     "slug": "z5",
     "name": "Z5",
     "category": "woodens",
