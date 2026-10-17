@@ -117,7 +117,7 @@
 
             </select>
             <input type="number" value="1">
-            <button class="normal add-to-cart-trigger" type="button">Add To Cart</button>
+            <button class="normal add-to-cart-trigger" type="button" data-messenger-label="შესაძენად მოგვწერთ მესენჯერში" onclick="if(this.dataset.messengerReady){window.location.href='https://m.me/581207708752069'}else{this.dataset.messengerReady='true';this.classList.add('is-switching');setTimeout(()=>{this.textContent=this.dataset.messengerLabel;this.classList.remove('normal','is-switching');this.classList.add('messenger-link','messenger-link-enter')},170)}">Add To Cart</button>
 
             
             <h4>Product Details</h4>

@@ -38,12 +38,3 @@ function showMessengerButton(button) {
     }, 170);
 }
 
-document.addEventListener('click', event => {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-    const button = target.closest('.add-to-cart-trigger');
-    if (!button) return;
-
-    event.preventDefault();
-    showMessengerButton(button);
-});
