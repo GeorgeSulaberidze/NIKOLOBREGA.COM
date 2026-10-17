@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <title>პროდუქტის დამატება | NIKOLO BREGA</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <a class="brand" href="index.html">NIKOLO BREGA</a>
+      <span class="admin-tag">კონტროლ პანელი</span>
+    </header>
+
+    <section class="intro">
+      <div class="eyebrow">მაღაზიის მართვა</div>
+      <h1>ახალი პროდუქტი</h1>
+      <p>შეავსეთ პროდუქტის ინფორმაცია, ატვირთეთ ფოტოები და ჩამოტვირთეთ საიტზე დასამატებელი ფაილები.</p>
+    </section>
+
+    <form id="product-form" class="form-card">
+      <label class="field">
+        <span>კატეგორია</span>
+        <select id="category" required>
+          <option value="leather">leather</option><option value="silvers">silvers</option>
+          <option value="metals">metals</option><option value="woodens">woodens</option>
+          <option value="acetate">acetate</option><option value="plastics">plastics</option>
+          <option value="watches">watches</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>პროდუქტის სახელი / კოდი</span>
+        <input id="name" type="text" placeholder="მაგ. NB 101" maxlength="60" required>
+      </label>
+      <div class="field-row">
+        <label class="field">
+          <span>ფასი (GEL)</span>
+          <input id="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="399" required>
+        </label>
+        <label class="field">
+          <span>ფაილის სახელი</span>
+          <input id="slug" type="text" placeholder="ავტომატურად შეივსება" maxlength="50" required>
+        </label>
+      </div>
+      <label class="field">
+        <span>აღწერა</span>
+        <textarea id="description" rows="5" maxlength="2000" placeholder="მოკლედ აღწერეთ პროდუქტი..." required></textarea>
+      </label>
+
+      <div class="field">
+        <span>პროდუქტის ფოტოები <small>1–4 ფოტო</small></span>
+        <label class="upload" for="photos">
+          <span class="upload-icon">＋</span>
+          <strong>აირჩიეთ ფოტოები</strong>
+          <small>JPG, PNG ან WebP · თითოეული მაქს. 10 MB</small>
+          <input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple required>
+        </label>
+        <div id="preview" class="preview-grid" aria-live="polite"></div>
+      </div>
+
+      <div id="message" class="message" role="status"></div>
+      <button id="submit" class="primary" type="submit">ფაილების პაკეტის ჩამოტვირთვა <span>↓</span></button>
+      <p class="fine-print">პაკეტი მოიცავს პროდუქტის გვერდს, ფოტოებს და მონაცემները. ZIP ფაიлыг გახსენით და შიგთავსი ატვირთეთ საიტის მთავარ საქაღალდეში.</p>
+    </form>
+    <footer>© NIKOLO BREGA <a href="index.html">საიტზე დაბრუნება</a></footer>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

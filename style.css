@@ -1337,3 +1337,7 @@ p.frame {
 }
 
 }
+
+/* Direct Messenger contact button */
+.messenger-link{display:inline-block;text-decoration:none;font-size:14px;font-weight:600;padding:15px 22px;color:#fff;background:#0866ff;border-radius:4px;cursor:pointer;transition:background .2s}.messenger-link:hover{background:#0756d6;color:#fff}
+
