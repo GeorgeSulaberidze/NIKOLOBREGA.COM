@@ -1339,6 +1339,13 @@ p.frame {
 }
 
 /* Direct Messenger contact button */
+.add-to-cart-trigger {
+  transition: opacity .17s ease, transform .17s ease;
+}
+.add-to-cart-trigger.is-switching {
+  opacity: 0;
+  transform: translateY(5px) scale(.97);
+}
 .messenger-link {
   display: inline-flex;
   align-items: center;
@@ -1357,10 +1364,24 @@ p.frame {
   cursor: pointer;
   transition: background-color .2s ease, color .2s ease, border-color .2s ease;
 }
+.messenger-link-enter {
+  animation: messenger-button-enter .3s ease both;
+}
+@keyframes messenger-button-enter {
+  from { opacity: 0; transform: translateY(-5px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 .messenger-link:hover,
 .messenger-link:focus-visible {
   border-color: #171717;
   background: #171717;
   color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .add-to-cart-trigger,
+  .messenger-link-enter {
+    transition: none;
+    animation: none;
+  }
 }
 
