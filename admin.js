@@ -13,8 +13,6 @@
   };
   const safeSlug = value => value.toLowerCase().trim()
     .replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
-  const hasGeorgian = value => /[\u10A0-\u10FF]/.test(value);
-  const hasEnglish = value => /\b(?:the|a|an|and|or|is|are|made|with|for|from|by|of|this|our|high|quality|handmade|wood|leather|watch|sunglasses|design|product|material|comes|includes|features|light|comfortable|premium|polarized)\b/i.test(value);
   const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[char]);
@@ -122,39 +120,40 @@
     message.className = 'message';
   });
 
-  function makeProductPage(product) {
+  async function makeProductPage(product) {
+    const response = await fetch('y3.html', { cache: 'no-store' });
+    if (!response.ok) throw new Error('y3.html შაბლონი ვერ ჩაიტვირთა.');
+    const template = new DOMParser().parseFromString(await response.text(), 'text/html');
     const images = product.images;
-    const thumbs = images.map((src, index) => `<button class="thumb" type="button" aria-label="ფოტო ${index + 1}" onclick="document.getElementById('main-photo').src='${src}'"><img src="${src}" alt="${escapeHtml(product.name)}"></button>`).join('\n');
-    const description = product.descriptionEn && product.descriptionKa
-      ? `${escapeHtml(product.descriptionEn).replace(/\n/g, '<br>')}<br><br><strong>ქართულად:</strong> ${escapeHtml(product.descriptionKa).replace(/\n/g, '<br>')}`
-      : escapeHtml(product.description || '').replace(/\n/g, '<br>');
-    return `<!doctype html>
-<html lang="ka"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(product.name)} | NIKOLO BREGA</title><link rel="stylesheet" href="style.css"><style>
-.new-product{max-width:1100px;margin:44px auto;padding:0 22px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:42px}.new-product img{display:block;width:100%;object-fit:cover}.main-photo{aspect-ratio:1/1}.thumbs{display:flex;gap:10px;margin-top:10px}.thumb{border:1px solid #ddd;background:white;padding:0;width:76px;cursor:pointer}.thumb img{aspect-ratio:1}.product-copy h1{font-size:30px;margin:8px 0 12px}.product-price{font-size:27px;font-weight:700;margin:14px 0 26px}.product-description{line-height:1.8;color:#555;white-space:normal}.back-link{display:inline-block;margin-bottom:24px;color:#555}.product-category{color:#888;font-size:13px}@media(max-width:700px){.new-product{grid-template-columns:1fr;gap:25px;margin:24px auto;padding:0 16px}.product-copy h1{font-size:25px}.thumb{width:64px}}
-</style></head><body><section id="header"><a href="index.html"><img height="40" width="140" src="img/image00001.png" alt="Nikolo Brega"></a><nav><ul id="navbar"><li><a href="index.html">Home</a></li><li><a href="${product.category}.html">${product.category}</a></li><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li></ul></nav></section><main class="new-product"><div><img id="main-photo" class="main-photo" src="${images[0]}" alt="${escapeHtml(product.name)}"><div class="thumbs">${thumbs}</div></div><article class="product-copy"><a class="back-link" href="${product.category}.html">← კატეგორიაში დაბრუნება</a><div class="product-category">NIKOLO BREGA / ${product.category}</div><h1>${escapeHtml(product.name)}</h1><div class="product-price">${escapeHtml(product.price)} GEL</div><button class="normal add-to-cart-trigger" type="button" data-messenger-label="შესაძენად მოგვწერთ მესენჯერში" onclick="if(this.dataset.messengerReady){window.location.href='https://m.me/581207708752069'}else{this.dataset.messengerReady='true';this.classList.add('is-switching');setTimeout(()=>{this.textContent=this.dataset.messengerLabel;this.classList.remove('normal','is-switching');this.classList.add('messenger-link','messenger-link-enter')},170)}">Add To Cart</button><h3>პროდუქტის აღწერა</h3><div class="product-description">${description}</div></article></main><script src="script.js"></script></body></html>`;
+    const imageElements = template.querySelectorAll('.small-img');
+    template.title = `${product.name} | NIKOLO BREGA`;
+    const mainImage = template.querySelector('#MainImg');
+    mainImage.setAttribute('src', images[0] || '');
+    mainImage.setAttribute('alt', product.name);
+    imageElements.forEach((image, index) => {
+      image.setAttribute('src', images[index] || '');
+      image.setAttribute('alt', `${product.name} — ფოტო ${index + 1}`);
+      image.closest('.small-img-col').hidden = !images[index];
+    });
+    template.querySelector('.single-pro-details h6').textContent = ` Home / ${product.name}`;
+    template.querySelector('.single-pro-details h2').textContent = `${product.price}GEL`;
+    const description = escapeHtml(product.description || '').replace(/\n/g, '<br>');
+    template.querySelector('.single-pro-details span').innerHTML = description;
+    return `<!DOCTYPE html>\n${template.documentElement.outerHTML}`;
   }
-
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const name = document.querySelector('#name').value.trim();
     const category = document.querySelector('#category').value;
     const price = document.querySelector('#price').value.trim();
-    const descriptionEn = document.querySelector('#description-en').value.trim();
-    const descriptionKa = document.querySelector('#description-ka').value.trim();
+    const description = document.querySelector('#description').value.trim();
     const slug = safeSlug(slugInput.value);
     const token = document.querySelector('#github-token').value.trim();
     if (!token) return setMessage('ჩასვით GitHub token საიტზე ასატვირთად.', 'error');
     if (!name || !price || !slug || selectedFiles.length < 1 || selectedFiles.length > 4) {
       return setMessage('შეავსეთ სახელი, ფასი და ფაილის სახელი; დაამატეთ 1-დან 4-მდე ფოტო.', 'error');
     }
-    if (!descriptionEn && !descriptionKa) return setMessage('შეავსეთ აღწერა ინგლისურად და ქართულად.', 'error');
-    const englishFieldBilingual = hasGeorgian(descriptionEn) && hasEnglish(descriptionEn);
-    const georgianFieldBilingual = hasGeorgian(descriptionKa) && hasEnglish(descriptionKa);
-    const existingBilingualText = englishFieldBilingual ? descriptionEn : georgianFieldBilingual ? descriptionKa : '';
-    const hasSeparateDescriptions = Boolean(descriptionEn && descriptionKa && !existingBilingualText);
-    if (!hasSeparateDescriptions && !existingBilingualText) {
-      return setMessage('აღწერის ორივე ენა დაამატეთ. თუ ორივე ენა ერთ ტექსტშია, ჩასვით ერთ ველში.', 'error');
-    }
+    if (!description) return setMessage('შეიყვანეთ პროდუქტის აღწერა.', 'error');
     if (selectedFiles.length === 0) return setMessage('ატვირთეთ პროდუქტის მინიმუმ ერთი ფოტო.', 'error');
     const button = document.querySelector('#submit'); button.disabled = true;
     button.firstChild.textContent = 'იტვირთება... ';
@@ -168,7 +167,7 @@
         throw new Error('გახსენით პანელი საიტის HTTPS მისამართიდან. პირდაპირ ფაილის გახსნისას არსებული პროდუქტების სიის შენარჩუნება შეუძლებელია.');
       }
       if (!Array.isArray(products)) products = [];
-      if (products.some(product => product.slug === slug)) throw new Error('ეს ფაილის სახელი უკვე არსებობს. მიუთითეთ სხვა სახელი.');
+      const existingProductIndex = products.findIndex(product => product.slug === slug);
 
       const images = selectedFiles.map((file, index) => {
         const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
@@ -176,14 +175,13 @@
       });
       const product = {
         slug, name, category, price, images,
-        ...(hasSeparateDescriptions
-          ? { descriptionEn, descriptionKa }
-          : { description: existingBilingualText })
+        description
       };
-      products.push(product);
+      if (existingProductIndex >= 0) products[existingProductIndex] = product;
+      else products.push(product);
       const uploadFiles = [
         { path: 'products.json', content: JSON.stringify(products, null, 2) },
-        { path: `${slug}.html`, content: makeProductPage(product) },
+        { path: `${slug}.html`, content: await makeProductPage(product) },
         ...selectedFiles.map((file, index) => ({ path: images[index], content: file, binary: true }))
       ];
       await uploadProduct(token, uploadFiles);
@@ -192,7 +190,9 @@
       form.reset();
       document.querySelector('#github-token').value = token;
       slugWasEdited = false;
-      setMessage('პროდუქტი აიტვირთა GitHub-ზე. საიტზე გამოჩენას შესაძლოა რამდენიმე წუთი დასჭირდეს.', 'success');
+      setMessage(existingProductIndex >= 0
+        ? 'პროდუქტი განახლდა GitHub-ზე. საიტზე ცვლილების გამოჩენას შესაძლოა რამდენიმე წუთი დასჭირდეს.'
+        : 'პროდუქტი აიტვირთა GitHub-ზე. საიტზე გამოჩენას შესაძლოა რამდენიმე წუთი დასჭირდეს.', 'success');
     } catch (error) {
       setMessage(error.message || 'საიტზე ატვირთვა ვერ მოხერხდა.', 'error');
     } finally {
