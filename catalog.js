@@ -1,4 +1,4 @@
-/* Adds admin products to category pages, keeping each page at 20 products. */
+/* Combines static catalog items and admin products into pages of 20. */
 (async function () {
   const categories = ['leather', 'silvers', 'metals', 'woodens', 'acetate', 'plastics', 'watches'];
   const currentFile = location.pathname.split('/').pop().replace(/\.html$/i, '');
@@ -91,7 +91,7 @@
     let pagePaths = staticPagePaths(document);
     if (!basePageCount) basePageCount = Math.max(1, ...pagePaths.keys());
 
-    const counts = await Promise.all(Array.from({ length: basePageCount }, async (_, index) => {
+    const staticCards = (await Promise.all(Array.from({ length: basePageCount }, async (_, index) => {
       const number = index + 1;
       let pageDocument;
       if (number === pageNumber) pageDocument = document;
@@ -101,22 +101,18 @@
         if (!pageResponse.ok) throw new Error(`Could not load ${path}`);
         pageDocument = new DOMParser().parseFromString(await pageResponse.text(), 'text/html');
       }
-      return pageDocument.querySelectorAll('#product1 .pro-container > .pro').length;
-    }));
+      return Array.from(pageDocument.querySelectorAll('#product1 .pro-container > .pro'));
+    }))).flat();
 
-    const capacities = counts.map(count => Math.max(0, 20 - count));
-    const existingDynamicCapacity = capacities.reduce((sum, capacity) => sum + capacity, 0);
-    const extraPages = Math.ceil(Math.max(0, categoryProducts.length - existingDynamicCapacity) / 20);
-    const pageCount = basePageCount + extraPages;
-    let offset = capacities.slice(0, Math.min(pageNumber - 1, basePageCount)).reduce((sum, capacity) => sum + capacity, 0);
-    let capacity = capacities[pageNumber - 1];
-    if (pageNumber > basePageCount) {
-      offset = existingDynamicCapacity + (pageNumber - basePageCount - 1) * 20;
-      capacity = 20;
-    }
-
-    const cards = categoryProducts.slice(offset, offset + (capacity || 0)).map(makeCard);
-    container.prepend(...cards);
+    const adminSlugs = new Set(categoryProducts.map(product => `${product.slug}.html`.toLowerCase()));
+    const catalogCards = staticCards.filter(card => {
+      const target = card.getAttribute('onclick')?.match(/(?:location\.href|window\.location\.href)\s*=\s*['"]([^'"]+)['"]/i)?.[1];
+      return !target || !adminSlugs.has(target.split('/').pop().toLowerCase());
+    });
+    const allCards = [...categoryProducts.map(makeCard), ...catalogCards];
+    const pageCount = Math.max(1, Math.ceil(allCards.length / 20));
+    const pageCards = allCards.slice((pageNumber - 1) * 20, pageNumber * 20);
+    container.replaceChildren(...pageCards);
     renderPagination(pageCount, basePageCount, pagePaths);
   } catch (error) {
     console.info('New product list is available when the site is served over HTTP/HTTPS.', error);

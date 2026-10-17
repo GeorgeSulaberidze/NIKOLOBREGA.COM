@@ -49,6 +49,12 @@
     return btoa(binary);
   }
 
+  function textFromBase64(encoded) {
+    const binary = atob(encoded.replace(/\s/g, ''));
+    const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+
   async function createBlob(token, content, isBinary = false) {
     const bytes = isBinary ? new Uint8Array(await content.arrayBuffer()) : new TextEncoder().encode(content);
     const blob = await githubRequest(token, 'git/blobs', {
@@ -168,10 +174,15 @@
       pageDocuments.push(pageDocument);
     }
 
-    const staticCounts = pageDocuments.map(page => page.querySelectorAll('#product1 .pro-container > .pro').length);
-    const dynamicCapacity = staticCounts.reduce((sum, count) => sum + Math.max(0, 20 - count), 0);
-    const productCount = products.filter(product => product.category === category).length;
-    const extraPages = Math.ceil(Math.max(0, productCount - dynamicCapacity) / 20);
+    const staticCards = pageDocuments.flatMap(page => Array.from(page.querySelectorAll('#product1 .pro-container > .pro')));
+    const categoryProducts = products.filter(product => product.category === category);
+    const productSlugs = new Set(categoryProducts.map(product => `${product.slug}.html`.toLowerCase()));
+    const replacedStaticCount = staticCards.filter(card => {
+      const target = card.getAttribute('onclick')?.match(/(?:location\.href|window\.location\.href)\s*=\s*['"]([^'"]+)['"]/i)?.[1];
+      return target && productSlugs.has(target.split('/').pop().toLowerCase());
+    }).length;
+    const totalProducts = staticCards.length - replacedStaticCount + categoryProducts.length;
+    const extraPages = Math.max(0, Math.ceil(totalProducts / 20) - basePageCount);
     if (!extraPages) return [];
 
     const template = pageDocuments[pageDocuments.length - 1];
@@ -180,6 +191,11 @@
       const page = new DOMParser().parseFromString(template.documentElement.outerHTML, 'text/html');
       page.querySelectorAll('#product1 .pro-container > .pro').forEach(card => card.remove());
       page.body.dataset.catalogBasePages = String(basePageCount);
+      if (!Array.from(page.scripts).some(script => /(?:^|\/)catalog\.js(?:\?|$)/i.test(script.getAttribute('src') || ''))) {
+        const catalogScript = page.createElement('script');
+        catalogScript.src = 'catalog.js';
+        page.body.append(catalogScript);
+      }
       const path = category === 'woodens'
         ? `${category}${pageNumber}.html`
         : `${category}-page-${pageNumber}.html`;
@@ -207,11 +223,10 @@
     try {
       let products = [];
       try {
-        const response = await fetch('products.json', { cache: 'no-store' });
-        if (!response.ok) throw new Error();
-        products = await response.json();
+        const file = await githubRequest(token, 'contents/products.json?ref=main');
+        products = JSON.parse(textFromBase64(file.content));
       } catch (_) {
-        throw new Error('გახსენით პანელი საიტის HTTPS მისამართიდან. პირდაპირ ფაილის გახსნისას არსებული პროდუქტების სიის შენარჩუნება შეუძლებელია.');
+        throw new Error('პროდუქტების სიის GitHub-იდან წაკითხვა ვერ მოხერხდა. გადაამოწმეთ token-ის Contents read/write წვდომა.');
       }
       if (!Array.isArray(products)) products = [];
       const now = Date.now();
