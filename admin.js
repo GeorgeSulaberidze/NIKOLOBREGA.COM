@@ -19,6 +19,77 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[char]);
 
+  const githubOwner = 'GeorgeSulaberidze';
+  const githubRepo = 'NIKOLOBREGA.COM';
+  const githubBranch = 'main';
+
+  async function githubRequest(token, endpoint, options = {}) {
+    const response = await fetch(`https://api.github.com/repos/${githubOwner}/${githubRepo}/${endpoint}`, {
+      ...options,
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${token}`,
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...options.headers
+      }
+    });
+    const result = response.status === 204 ? null : await response.json().catch(() => null);
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('GitHub token არასწორია ან ვადაგასულია.');
+      if (response.status === 403) throw new Error('GitHub token-ს არ აქვს რეპოზიტორიაში Contents write წვდომა.');
+      throw new Error(result?.message || `GitHub ატვირთვა ვერ შესრულდა (${response.status}).`);
+    }
+    return result;
+  }
+
+  function base64FromBytes(bytes) {
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+    }
+    return btoa(binary);
+  }
+
+  async function createBlob(token, content, isBinary = false) {
+    const bytes = isBinary ? new Uint8Array(await content.arrayBuffer()) : new TextEncoder().encode(content);
+    const blob = await githubRequest(token, 'git/blobs', {
+      method: 'POST',
+      body: JSON.stringify({ content: base64FromBytes(bytes), encoding: 'base64' })
+    });
+    return blob.sha;
+  }
+
+  async function uploadProduct(token, files) {
+    const reference = await githubRequest(token, `git/ref/heads/${githubBranch}`);
+    const parentCommit = await githubRequest(token, `git/commits/${reference.object.sha}`);
+    const blobs = [];
+    for (const file of files) {
+      blobs.push({
+        path: file.path,
+        mode: '100644',
+        type: 'blob',
+        sha: await createBlob(token, file.content, file.binary)
+      });
+    }
+    const tree = await githubRequest(token, 'git/trees', {
+      method: 'POST',
+      body: JSON.stringify({ base_tree: parentCommit.tree.sha, tree: blobs })
+    });
+    const commit = await githubRequest(token, 'git/commits', {
+      method: 'POST',
+      body: JSON.stringify({
+        message: `Add product ${files.find(file => file.path.endsWith('.html'))?.path || ''}`,
+        tree: tree.sha,
+        parents: [reference.object.sha]
+      })
+    });
+    await githubRequest(token, `git/refs/heads/${githubBranch}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ sha: commit.sha, force: false })
+    });
+  }
+
   document.querySelector('#name').addEventListener('input', event => {
     if (!slugWasEdited) slugInput.value = safeSlug(event.target.value);
   });
@@ -71,7 +142,8 @@
     const descriptionEn = document.querySelector('#description-en').value.trim();
     const descriptionKa = document.querySelector('#description-ka').value.trim();
     const slug = safeSlug(slugInput.value);
-    if (!window.JSZip) return setMessage('პაკეტის შემქმნელი ვერ ჩაიტვირთა. შეამოწმეთ ინტერნეტი და სცადეთ თავიდან.', 'error');
+    const token = document.querySelector('#github-token').value.trim();
+    if (!token) return setMessage('ჩასვით GitHub token საიტზე ასატვირთად.', 'error');
     if (!name || !price || !slug || selectedFiles.length < 1 || selectedFiles.length > 4) {
       return setMessage('შეავსეთ სახელი, ფასი და ფაილის სახელი; დაამატეთ 1-დან 4-მდე ფოტო.', 'error');
     }
@@ -85,7 +157,7 @@
     }
     if (selectedFiles.length === 0) return setMessage('ატვირთეთ პროდუქტის მინიმუმ ერთი ფოტო.', 'error');
     const button = document.querySelector('#submit'); button.disabled = true;
-    button.firstChild.textContent = 'პაკეტი მზადდება... ';
+    button.firstChild.textContent = 'იტვირთება... ';
     try {
       let products = [];
       try {
@@ -98,7 +170,6 @@
       if (!Array.isArray(products)) products = [];
       if (products.some(product => product.slug === slug)) throw new Error('ეს ფაილის სახელი უკვე არსებობს. მიუთითეთ სხვა სახელი.');
 
-      const zip = new JSZip();
       const images = selectedFiles.map((file, index) => {
         const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
         return `CATALOG/${slug}-${index + 1}.${extension}`;
@@ -110,17 +181,22 @@
           : { description: existingBilingualText })
       };
       products.push(product);
-      zip.file('products.json', JSON.stringify(products, null, 2));
-      zip.file(`${slug}.html`, makeProductPage(product));
-      selectedFiles.forEach((file, index) => zip.file(images[index], file));
-      const blob = await zip.generateAsync({ type: 'blob' });
-      const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${slug}-product.zip`;
-      document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-      setMessage('პაკეტი ჩამოიტვირთა. ZIP გაშალეთ და შიგთავსი საიტის მთავარ საქაღალდეში გადაიტანეთ.', 'success');
+      const uploadFiles = [
+        { path: 'products.json', content: JSON.stringify(products, null, 2) },
+        { path: `${slug}.html`, content: makeProductPage(product) },
+        ...selectedFiles.map((file, index) => ({ path: images[index], content: file, binary: true }))
+      ];
+      await uploadProduct(token, uploadFiles);
+      selectedFiles = [];
+      renderPreview();
+      form.reset();
+      document.querySelector('#github-token').value = token;
+      slugWasEdited = false;
+      setMessage('პროდუქტი აიტვირთა GitHub-ზე. საიტზე გამოჩენას შესაძლოა რამდენიმე წუთი დასჭირდეს.', 'success');
     } catch (error) {
-      setMessage(error.message || 'პაკეტის შექმნა ვერ მოხერხდა.', 'error');
+      setMessage(error.message || 'საიტზე ატვირთვა ვერ მოხერხდა.', 'error');
     } finally {
-      button.disabled = false; button.firstChild.textContent = 'ფაილების პაკეტის ჩამოტვირთვა ';
+      button.disabled = false; button.firstChild.textContent = 'საიტზე ატვირთვა ';
     }
   });
 })();

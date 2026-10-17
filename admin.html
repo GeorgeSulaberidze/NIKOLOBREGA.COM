@@ -54,6 +54,12 @@
       </label>
       <p class="fine-print description-help">შეავსეთ ორივე ველი. თუ ერთ ველში უკვე გაქვთ ორივე ენის ტექსტი, მეორე ველი ცარიელი დატოვეთ — ტექსტი უცვლელად გამოჩნდება.</p>
 
+      <label class="field">
+        <span>GitHub ატვირთვის წვდომის გასაღები</span>
+        <input id="github-token" type="password" autocomplete="off" placeholder="ჩასვით GitHub token" required>
+        <small>საჭიროა რეპოზიტორიაში Contents: read and write წვდომა. გასაღები ინახება მხოლოდ ამ გვერდის სესიის განმავლობაში.</small>
+      </label>
+
       <div class="field">
         <span>პროდუქტის ფოტოები <small>1–4 ფოტო</small></span>
         <label class="upload" for="photos">
@@ -66,12 +72,12 @@
       </div>
 
       <div id="message" class="message" role="status"></div>
-      <button id="submit" class="primary" type="submit">ფაილების პაკეტის ჩამოტვირთვა <span>↓</span></button>
-      <p class="fine-print">პაკეტი მოიცავს პროდუქტის გვერდს, ფოტოებს და მონაცემները. ZIP ფაიлыг გახსენით და შიგთავსი ატვირთეთ საიტის მთავარ საქაღალდეში.</p>
+      <button id="submit" class="primary" type="submit">საიტზე ატვირთვა <span>↑</span></button>
+      <p class="fine-print">პაკეტი მოიცავს პროდუქტის გვერდს, ფოტოებს და მონაცემները. პროდუქტი და ფოტოები აიტვირთება GitHub-ზე და დაემატება არჩეული კატეგორიის ჩამონათვალში.</p>
     </form>
     <footer>© NIKOLO BREGA <a href="index.html">საიტზე დაბრუნება</a></footer>
   </main>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
   <script src="admin.js"></script>
 </body>
 </html>
