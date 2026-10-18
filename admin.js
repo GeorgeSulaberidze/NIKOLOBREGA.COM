@@ -289,11 +289,13 @@
       if (source.temporary) img.onload = () => URL.revokeObjectURL(source.url);
       const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'remove-photo';
       remove.textContent = '×'; remove.setAttribute('aria-label', `ფოტოს წაშლა: ${source.name}`);
-      remove.disabled = !tokenInput.value.trim();
       remove.addEventListener('click', () => {
         if (source.existing) editImages.splice(source.index, 1);
         else editFiles.splice(source.index, 1);
         renderEditPreview();
+        setEditMessage(tokenInput.value.trim()
+          ? 'ფოტო მონიშნულია წასაშლელად. ცვლილების GitHub-ზე შესანახად დააჭირეთ „ცვლილებების შენახვას“.'
+          : 'ფოტო მონიშნულია წასაშლელად. შეიყვანეთ GitHub token და შემდეგ დააჭირეთ „ცვლილებების შენახვას“.', 'info');
       });
       item.append(img, remove); editPreview.append(item);
     });
@@ -314,7 +316,7 @@
 
   function updateEditLock() {
     const locked = !tokenInput.value.trim();
-    ['#edit-name', '#edit-price', '#edit-description', '#edit-photos', '#save-edit', '#delete-product', '.remove-photo']
+    ['#edit-name', '#edit-price', '#edit-description', '#edit-photos', '#save-edit', '#delete-product']
       .forEach(selector => { const control = document.querySelector(selector); if (control) control.disabled = locked; });
     if (editingProduct && locked) setEditMessage('კორექტირებისთვის ჯერ შეიყვანეთ GitHub token.', 'info');
     else if (editMessage.classList.contains('info')) editMessage.className = 'message';
