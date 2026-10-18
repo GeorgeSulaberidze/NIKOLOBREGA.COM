@@ -297,8 +297,19 @@
     document.querySelector('#edit-description').value = editingProduct.description || '';
     document.querySelector('#edit-product-meta').textContent = `${editingProduct.category} · ${editingProduct.slug}`;
     editFiles = []; editPhotos.value = ''; editMessage.className = 'message';
+    updateEditLock();
     renderEditPreview();
   }
+
+  function updateEditLock() {
+    const locked = !tokenInput.value.trim();
+    ['#edit-name', '#edit-price', '#edit-description', '#edit-photos', '#save-edit', '#delete-product']
+      .forEach(selector => { const control = document.querySelector(selector); if (control) control.disabled = locked; });
+    if (editingProduct && locked) setEditMessage('კორექტირებისთვის ჯერ შეიყვანეთ GitHub token.', 'info');
+    else if (editMessage.classList.contains('info')) editMessage.className = 'message';
+  }
+
+  tokenInput.addEventListener('input', updateEditLock);
 
   function activateAdminPanel(panelId) {
     const target = panelId === 'edit-panel' ? 'edit-panel' : 'upload-panel';
@@ -319,6 +330,7 @@
   if (initialUrl.searchParams.get('section') === 'edit' || ['#edit', '#edit-panel'].includes(initialUrl.hash)) {
     activateAdminPanel('edit-panel');
   }
+  updateEditLock();
   document.querySelector('#refresh-products').addEventListener('click', async event => {
     event.currentTarget.disabled = true;
     try { await loadProductsForEdit(); setEditMessage('პროდუქტების სია განახლდა.', 'success'); }
@@ -336,7 +348,7 @@
     if (incoming.length) {
       const button = document.querySelector('#save-edit'); button.disabled = true;
       try { editFiles = await Promise.all(incoming.map(optimizeImage)); renderEditPreview(); }
-      finally { button.disabled = false; }
+      finally { button.disabled = !tokenInput.value.trim(); }
     }
     editPhotos.value = '';
   });
@@ -371,7 +383,7 @@
       await loadProductsForEdit(); editSelect.value = updated.slug; showEditProduct();
       setEditMessage('ცვლილებები შენახულია GitHub-ზე.', 'success');
     } catch (error) { setEditMessage(error.message || 'ცვლილებების შენახვა ვერ მოხერხდა.', 'error'); }
-    finally { saveButton.disabled = false; }
+    finally { updateEditLock(); }
   });
 
   document.querySelector('#delete-product').addEventListener('click', async () => {
@@ -393,7 +405,7 @@
       await loadProductsForEdit();
       setEditMessage('პროდუქტი წაიშალა.', 'success');
     } catch (error) { setEditMessage(error.message || 'პროდუქტის წაშლა ვერ მოხერხდა.', 'error'); }
-    finally { button.disabled = false; }
+    finally { button.disabled = !tokenInput.value.trim(); }
   });
 
   form.addEventListener('submit', async event => {
