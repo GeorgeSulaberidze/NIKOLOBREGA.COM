@@ -13,6 +13,7 @@
   let selectedFiles = [];
   let slugWasEdited = false;
   let editFiles = [];
+  let editImages = [];
   let productsCache = [];
   let editingProduct = null;
 
@@ -278,13 +279,23 @@
 
   function renderEditPreview() {
     editPreview.replaceChildren();
-    const sources = editFiles.length ? editFiles.map(file => ({ url: URL.createObjectURL(file), name: file.name, temporary: true }))
-      : (editingProduct?.images || []).map(path => ({ url: path, name: path.split('/').pop() }));
+    const sources = [
+      ...editImages.map((path, index) => ({ url: path, name: path.split('/').pop(), existing: true, index })),
+      ...editFiles.map((file, index) => ({ url: URL.createObjectURL(file), name: file.name, temporary: true, index }))
+    ];
     sources.slice(0, 4).forEach(source => {
       const item = document.createElement('div'); item.className = 'preview-item';
       const img = document.createElement('img'); img.src = source.url; img.alt = source.name;
       if (source.temporary) img.onload = () => URL.revokeObjectURL(source.url);
-      item.append(img); editPreview.append(item);
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'remove-photo';
+      remove.textContent = '×'; remove.setAttribute('aria-label', `ფოტოს წაშლა: ${source.name}`);
+      remove.disabled = !tokenInput.value.trim();
+      remove.addEventListener('click', () => {
+        if (source.existing) editImages.splice(source.index, 1);
+        else editFiles.splice(source.index, 1);
+        renderEditPreview();
+      });
+      item.append(img, remove); editPreview.append(item);
     });
   }
 
@@ -296,14 +307,14 @@
     document.querySelector('#edit-price').value = editingProduct.price ?? '';
     document.querySelector('#edit-description').value = editingProduct.description || '';
     document.querySelector('#edit-product-meta').textContent = `${editingProduct.category} · ${editingProduct.slug}`;
-    editFiles = []; editPhotos.value = ''; editMessage.className = 'message';
+    editFiles = []; editImages = [...(editingProduct.images || [])]; editPhotos.value = ''; editMessage.className = 'message';
     updateEditLock();
     renderEditPreview();
   }
 
   function updateEditLock() {
     const locked = !tokenInput.value.trim();
-    ['#edit-name', '#edit-price', '#edit-description', '#edit-photos', '#save-edit', '#delete-product']
+    ['#edit-name', '#edit-price', '#edit-description', '#edit-photos', '#save-edit', '#delete-product', '.remove-photo']
       .forEach(selector => { const control = document.querySelector(selector); if (control) control.disabled = locked; });
     if (editingProduct && locked) setEditMessage('კორექტირებისთვის ჯერ შეიყვანეთ GitHub token.', 'info');
     else if (editMessage.classList.contains('info')) editMessage.className = 'message';
@@ -341,7 +352,7 @@
 
   editPhotos.addEventListener('change', async () => {
     const incoming = Array.from(editPhotos.files || []);
-    if (incoming.length > 4) { setEditMessage('აირჩიეთ მაქსიმუმ 4 ფოტო.', 'error'); editPhotos.value = ''; return; }
+    if (editImages.length + editFiles.length + incoming.length > 4) { setEditMessage('პროდუქტს მაქსიმუმ 4 ფოტო შეიძლება ჰქონდეს. წაშალეთ არსებული ფოტო ან აირჩიეთ ნაკლები.', 'error'); editPhotos.value = ''; return; }
     if (incoming.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024)) {
       setEditMessage('გამოიყენეთ JPG, PNG ან WebP ფოტოები, თითოეული მაქსიმუმ 10 MB.', 'error'); editPhotos.value = ''; return;
     }
@@ -364,10 +375,12 @@
       const price = document.querySelector('#edit-price').value.trim();
       if (!name || !price) throw new Error('შეავსეთ პროდუქტის სახელი და ფასი.');
       if (editFiles.length && (editFiles.length < 1 || editFiles.length > 4)) throw new Error('აირჩიეთ 1-დან 4 ფოტომდე.');
-      const images = editFiles.length ? editFiles.map((file, index) => {
+      const newImagePaths = editFiles.map((file, index) => {
         const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
         return `CATALOG/${editingProduct.slug}-edit-${Date.now()}-${index + 1}.${ext}`;
-      }) : editingProduct.images;
+      });
+      const images = [...editImages, ...newImagePaths];
+      if (!images.length) throw new Error('პროდუქტს მინიმუმ ერთი ფოტო უნდა დარჩეს.');
       const updated = { ...editingProduct, name, price, description: document.querySelector('#edit-description').value.trim(), images };
       const products = productsCache.map(item => item.slug === updated.slug ? updated : item);
       const retainedImages = new Set(products.flatMap(item => item.images || []));
@@ -379,7 +392,7 @@
       ];
       await uploadProduct(token, files, `Update product ${updated.slug}`);
       productsCache = products;
-      editFiles = [];
+      editFiles = []; editImages = [];
       await loadProductsForEdit(); editSelect.value = updated.slug; showEditProduct();
       setEditMessage('ცვლილებები შენახულია GitHub-ზე.', 'success');
     } catch (error) { setEditMessage(error.message || 'ცვლილებების შენახვა ვერ მოხერხდა.', 'error'); }
@@ -401,7 +414,7 @@
         ...(removed.images || []).filter(path => !retainedImages.has(path)).map(path => ({ path, delete: true }))
       ];
       await uploadProduct(token, files, `Delete product ${removed.slug}`);
-      productsCache = products; editFiles = [];
+      productsCache = products; editFiles = []; editImages = [];
       await loadProductsForEdit();
       setEditMessage('პროდუქტი წაიშალა.', 'success');
     } catch (error) { setEditMessage(error.message || 'პროდუქტის წაშლა ვერ მოხერხდა.', 'error'); }
