@@ -300,13 +300,25 @@
     renderEditPreview();
   }
 
-  document.querySelectorAll('[data-admin-panel]').forEach(button => button.addEventListener('click', () => {
-    document.querySelectorAll('[data-admin-panel]').forEach(item => item.classList.toggle('active', item === button));
-    document.querySelectorAll('#upload-panel, #edit-panel').forEach(panel => { panel.hidden = panel.id !== button.dataset.adminPanel; });
-    if (button.dataset.adminPanel === 'edit-panel' && !productsCache.length) {
+  function activateAdminPanel(panelId) {
+    const target = panelId === 'edit-panel' ? 'edit-panel' : 'upload-panel';
+    document.querySelectorAll('[data-admin-panel]').forEach(item => item.classList.toggle('active', item.dataset.adminPanel === target));
+    document.querySelectorAll('#upload-panel, #edit-panel').forEach(panel => { panel.hidden = panel.id !== target; });
+    if (target === 'edit-panel' && !productsCache.length) {
       loadProductsForEdit().catch(error => setEditMessage(error.message, 'error'));
     }
+  }
+
+  document.querySelectorAll('[data-admin-panel]').forEach(button => button.addEventListener('click', () => {
+    activateAdminPanel(button.dataset.adminPanel);
+    const url = new URL(window.location.href);
+    url.searchParams.set('section', button.dataset.adminPanel === 'edit-panel' ? 'edit' : 'upload');
+    history.replaceState(null, '', url);
   }));
+  const initialUrl = new URL(window.location.href);
+  if (initialUrl.searchParams.get('section') === 'edit' || ['#edit', '#edit-panel'].includes(initialUrl.hash)) {
+    activateAdminPanel('edit-panel');
+  }
   document.querySelector('#refresh-products').addEventListener('click', async event => {
     event.currentTarget.disabled = true;
     try { await loadProductsForEdit(); setEditMessage('პროდუქტების სია განახლდა.', 'success'); }
