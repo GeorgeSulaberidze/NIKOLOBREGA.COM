@@ -60,7 +60,7 @@
       ...options,
       headers: {
         Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.body ? { 'Content-Type': 'application/json' } : {}),
         ...options.headers
       }
@@ -252,10 +252,19 @@
   }
 
   async function loadProductsForEdit() {
-    const token = tokenInput.value.trim();
-    if (!token) throw new Error('ჯერ შეიყვანეთ GitHub token.');
-    const file = await githubRequest(token, 'contents/products.json?ref=main');
-    productsCache = JSON.parse(textFromBase64(file.content));
+    let response;
+    try {
+      response = await fetch(`https://raw.githubusercontent.com/${githubOwner}/${githubRepo}/${githubBranch}/products.json?${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`products.json: ${response.status}`);
+      productsCache = await response.json();
+    } catch (publicReadError) {
+      try {
+        const file = await githubRequest(tokenInput.value.trim(), 'contents/products.json?ref=main');
+        productsCache = JSON.parse(textFromBase64(file.content));
+      } catch (privateReadError) {
+        throw new Error(`პროდუქტების სია ვერ ჩაიტვირთა. შეამოწმეთ კავშირი და GitHub token. ${privateReadError.message || publicReadError.message}`);
+      }
+    }
     if (!Array.isArray(productsCache)) throw new Error('პროდუქტების სია არასწორია.');
     const previous = editSelect.value;
     editSelect.replaceChildren(new Option('აირჩიეთ პროდუქტი', ''));
@@ -294,7 +303,7 @@
   document.querySelectorAll('[data-admin-panel]').forEach(button => button.addEventListener('click', () => {
     document.querySelectorAll('[data-admin-panel]').forEach(item => item.classList.toggle('active', item === button));
     document.querySelectorAll('#upload-panel, #edit-panel').forEach(panel => { panel.hidden = panel.id !== button.dataset.adminPanel; });
-    if (button.dataset.adminPanel === 'edit-panel' && !productsCache.length && tokenInput.value.trim()) {
+    if (button.dataset.adminPanel === 'edit-panel' && !productsCache.length) {
       loadProductsForEdit().catch(error => setEditMessage(error.message, 'error'));
     }
   }));
