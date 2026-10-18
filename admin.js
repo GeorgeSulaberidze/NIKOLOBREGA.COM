@@ -4,12 +4,25 @@
   const preview = document.querySelector('#preview');
   const message = document.querySelector('#message');
   const slugInput = document.querySelector('#slug');
+  const tokenInput = document.querySelector('#github-token');
+  const editForm = document.querySelector('#edit-form');
+  const editSelect = document.querySelector('#edit-product-select');
+  const editPhotos = document.querySelector('#edit-photos');
+  const editPreview = document.querySelector('#edit-preview');
+  const editMessage = document.querySelector('#edit-message');
   let selectedFiles = [];
   let slugWasEdited = false;
+  let editFiles = [];
+  let productsCache = [];
+  let editingProduct = null;
 
   const setMessage = (text, type) => {
     message.textContent = text;
     message.className = `message show ${type}`;
+  };
+  const setEditMessage = (text, type) => {
+    editMessage.textContent = text;
+    editMessage.className = `message show ${type}`;
   };
   const safeSlug = value => value.toLowerCase().trim()
     .replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
@@ -85,11 +98,15 @@
     return blob.sha;
   }
 
-  async function uploadProduct(token, files) {
+  async function uploadProduct(token, files, commitMessage = '') {
     const reference = await githubRequest(token, `git/ref/heads/${githubBranch}`);
     const parentCommit = await githubRequest(token, `git/commits/${reference.object.sha}`);
     const blobs = [];
     for (const file of files) {
+      if (file.delete) {
+        blobs.push({ path: file.path, mode: '100644', type: 'blob', sha: null });
+        continue;
+      }
       blobs.push({
         path: file.path,
         mode: '100644',
@@ -104,7 +121,7 @@
     const commit = await githubRequest(token, 'git/commits', {
       method: 'POST',
       body: JSON.stringify({
-        message: `Add product ${files.find(file => file.path.endsWith('.html'))?.path || ''}`,
+        message: commitMessage || `Add product ${files.find(file => file.path.endsWith('.html'))?.path || ''}`,
         tree: tree.sha,
         parents: [reference.object.sha]
       })
@@ -233,6 +250,130 @@
     }
     return files;
   }
+
+  async function loadProductsForEdit() {
+    const token = tokenInput.value.trim();
+    if (!token) throw new Error('ჯერ შეიყვანეთ GitHub token.');
+    const file = await githubRequest(token, 'contents/products.json?ref=main');
+    productsCache = JSON.parse(textFromBase64(file.content));
+    if (!Array.isArray(productsCache)) throw new Error('პროდუქტების სია არასწორია.');
+    const previous = editSelect.value;
+    editSelect.replaceChildren(new Option('აირჩიეთ პროდუქტი', ''));
+    productsCache.forEach(product => editSelect.add(new Option(`${product.name} · ${product.price} GEL`, product.slug)));
+    editSelect.value = productsCache.some(product => product.slug === previous) ? previous : '';
+    if (editSelect.value) showEditProduct(); else {
+      editForm.hidden = true;
+      document.querySelector('#edit-product-meta').textContent = `${productsCache.length} პროდუქტი`;
+    }
+  }
+
+  function renderEditPreview() {
+    editPreview.replaceChildren();
+    const sources = editFiles.length ? editFiles.map(file => ({ url: URL.createObjectURL(file), name: file.name, temporary: true }))
+      : (editingProduct?.images || []).map(path => ({ url: path, name: path.split('/').pop() }));
+    sources.slice(0, 4).forEach(source => {
+      const item = document.createElement('div'); item.className = 'preview-item';
+      const img = document.createElement('img'); img.src = source.url; img.alt = source.name;
+      if (source.temporary) img.onload = () => URL.revokeObjectURL(source.url);
+      item.append(img); editPreview.append(item);
+    });
+  }
+
+  function showEditProduct() {
+    editingProduct = productsCache.find(product => product.slug === editSelect.value) || null;
+    if (!editingProduct) { editForm.hidden = true; return; }
+    editForm.hidden = false;
+    document.querySelector('#edit-name').value = editingProduct.name || '';
+    document.querySelector('#edit-price').value = editingProduct.price ?? '';
+    document.querySelector('#edit-description').value = editingProduct.description || '';
+    document.querySelector('#edit-product-meta').textContent = `${editingProduct.category} · ${editingProduct.slug}`;
+    editFiles = []; editPhotos.value = ''; editMessage.className = 'message';
+    renderEditPreview();
+  }
+
+  document.querySelectorAll('[data-admin-panel]').forEach(button => button.addEventListener('click', () => {
+    document.querySelectorAll('[data-admin-panel]').forEach(item => item.classList.toggle('active', item === button));
+    document.querySelectorAll('#upload-panel, #edit-panel').forEach(panel => { panel.hidden = panel.id !== button.dataset.adminPanel; });
+    if (button.dataset.adminPanel === 'edit-panel' && !productsCache.length && tokenInput.value.trim()) {
+      loadProductsForEdit().catch(error => setEditMessage(error.message, 'error'));
+    }
+  }));
+  document.querySelector('#refresh-products').addEventListener('click', async event => {
+    event.currentTarget.disabled = true;
+    try { await loadProductsForEdit(); setEditMessage('პროდუქტების სია განახლდა.', 'success'); }
+    catch (error) { setEditMessage(error.message || 'სიის ჩატვირთვა ვერ მოხერხდა.', 'error'); }
+    finally { event.currentTarget.disabled = false; }
+  });
+  editSelect.addEventListener('change', showEditProduct);
+
+  editPhotos.addEventListener('change', async () => {
+    const incoming = Array.from(editPhotos.files || []);
+    if (incoming.length > 4) { setEditMessage('აირჩიეთ მაქსიმუმ 4 ფოტო.', 'error'); editPhotos.value = ''; return; }
+    if (incoming.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024)) {
+      setEditMessage('გამოიყენეთ JPG, PNG ან WebP ფოტოები, თითოეული მაქსიმუმ 10 MB.', 'error'); editPhotos.value = ''; return;
+    }
+    if (incoming.length) {
+      const button = document.querySelector('#save-edit'); button.disabled = true;
+      try { editFiles = await Promise.all(incoming.map(optimizeImage)); renderEditPreview(); }
+      finally { button.disabled = false; }
+    }
+    editPhotos.value = '';
+  });
+
+  editForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!editingProduct) return;
+    const token = tokenInput.value.trim();
+    const saveButton = document.querySelector('#save-edit'); saveButton.disabled = true;
+    try {
+      if (!token) throw new Error('ჯერ შეიყვანეთ GitHub token.');
+      const name = document.querySelector('#edit-name').value.trim();
+      const price = document.querySelector('#edit-price').value.trim();
+      if (!name || !price) throw new Error('შეავსეთ პროდუქტის სახელი და ფასი.');
+      if (editFiles.length && (editFiles.length < 1 || editFiles.length > 4)) throw new Error('აირჩიეთ 1-დან 4 ფოტომდე.');
+      const images = editFiles.length ? editFiles.map((file, index) => {
+        const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+        return `CATALOG/${editingProduct.slug}-edit-${Date.now()}-${index + 1}.${ext}`;
+      }) : editingProduct.images;
+      const updated = { ...editingProduct, name, price, description: document.querySelector('#edit-description').value.trim(), images };
+      const products = productsCache.map(item => item.slug === updated.slug ? updated : item);
+      const retainedImages = new Set(products.flatMap(item => item.images || []));
+      const files = [
+        { path: 'products.json', content: JSON.stringify(products, null, 2) },
+        { path: `${updated.slug}.html`, content: await makeProductPage(updated) },
+        ...editFiles.map((content, index) => ({ path: images[index], content, binary: true })),
+        ...(editingProduct.images || []).filter(path => !retainedImages.has(path)).map(path => ({ path, delete: true }))
+      ];
+      await uploadProduct(token, files, `Update product ${updated.slug}`);
+      productsCache = products;
+      editFiles = [];
+      await loadProductsForEdit(); editSelect.value = updated.slug; showEditProduct();
+      setEditMessage('ცვლილებები შენახულია GitHub-ზე.', 'success');
+    } catch (error) { setEditMessage(error.message || 'ცვლილებების შენახვა ვერ მოხერხდა.', 'error'); }
+    finally { saveButton.disabled = false; }
+  });
+
+  document.querySelector('#delete-product').addEventListener('click', async () => {
+    if (!editingProduct || !confirm(`წაიშალოს პროდუქტი „${editingProduct.name}“?`)) return;
+    const button = document.querySelector('#delete-product'); button.disabled = true;
+    try {
+      const token = tokenInput.value.trim();
+      if (!token) throw new Error('ჯერ შეიყვანეთ GitHub token.');
+      const removed = editingProduct;
+      const products = productsCache.filter(item => item.slug !== removed.slug);
+      const retainedImages = new Set(products.flatMap(item => item.images || []));
+      const files = [
+        { path: 'products.json', content: JSON.stringify(products, null, 2) },
+        { path: `${removed.slug}.html`, delete: true },
+        ...(removed.images || []).filter(path => !retainedImages.has(path)).map(path => ({ path, delete: true }))
+      ];
+      await uploadProduct(token, files, `Delete product ${removed.slug}`);
+      productsCache = products; editFiles = [];
+      await loadProductsForEdit();
+      setEditMessage('პროდუქტი წაიშალა.', 'success');
+    } catch (error) { setEditMessage(error.message || 'პროდუქტის წაშლა ვერ მოხერხდა.', 'error'); }
+    finally { button.disabled = false; }
+  });
 
   form.addEventListener('submit', async event => {
     event.preventDefault();

@@ -14,6 +14,18 @@
       <span class="admin-tag">კონტროლ პანელი</span>
     </header>
 
+    <section class="token-card">
+      <label class="field" for="github-token"><span>GitHub წვდომის token</span>
+        <input id="github-token" type="password" autocomplete="off" placeholder="შეიყვანეთ GitHub token">
+      </label>
+      <small>Token გამოიყენება პროდუქტის GitHub-ზე შესანახად.</small>
+    </section>
+    <nav class="admin-nav" aria-label="ადმინის განყოფილებები">
+      <button type="button" class="active" data-admin-panel="upload-panel">ატვირთვა</button>
+      <button type="button" data-admin-panel="edit-panel">კორექტირება</button>
+    </nav>
+
+    <section id="upload-panel">
     <section class="intro">
       <div class="eyebrow">მაღაზიის მართვა</div>
       <h1>ახალი პროდუქტი</h1>
@@ -48,11 +60,7 @@
         <span>პროდუქტის აღწერა</span>
         <textarea id="description" rows="6" maxlength="4000" placeholder="მიუთითეთ პროდუქტის აღწერა ნებისმიერ ენაზე..." required></textarea>
       </label>
-      <label class="field">
-        <span>GitHub ატვირთვის წვდომის გასაღები</span>
-        <input id="github-token" type="password" autocomplete="off" placeholder="ჩასვით GitHub token" required>
-        <small>საჭიროა რეპოზიტორიაში Contents: read and write წვდომა. გასაღები ინახება მხოლოდ ამ გვერდის სესიის განმავლობაში.</small>
-      </label>
+      
 
       <div class="field">
         <span>პროდუქტის ფოტოები <small>1–4 ფოტო</small></span>
@@ -69,6 +77,43 @@
       <button id="submit" class="primary" type="submit">საიტზე ატვირთვა <span>↑</span></button>
       <p class="fine-print">პაკეტი მოიცავს პროდუქტის გვერდს, ფოტოებს და მონაცემները. პროდუქტი და ფოტოები აიტვირთება GitHub-ზე და დაემატება არჩეული კატეგორიის ჩამონათვალში.</p>
     </form>
+    </section>
+
+    <section id="edit-panel" hidden>
+      <section class="intro">
+        <div class="eyebrow">პროდუქტების მართვა</div>
+        <h1>კორექტირება</h1>
+        <p>აირჩიეთ პროდუქტი, შეცვალეთ საჭირო ინფორმაცია და შეინახეთ.</p>
+      </section>
+      <section class="form-card">
+        <div class="edit-toolbar">
+          <label class="field" for="edit-product-select"><span>პროდუქტი</span>
+            <select id="edit-product-select"><option value="">ჯერ ჩატვირთეთ პროდუქტები</option></select>
+          </label>
+          <button id="refresh-products" class="secondary" type="button">სიის განახლება</button>
+        </div>
+        <small id="edit-product-meta" class="product-meta"></small>
+        <form id="edit-form" hidden>
+          <label class="field"><span>სახელი</span><input id="edit-name" maxlength="60" required></label>
+          <label class="field"><span>ფასი (GEL)</span><input id="edit-price" type="number" min="0" step="0.01" required></label>
+          <label class="field"><span>აღწერა</span><textarea id="edit-description" rows="5" maxlength="4000"></textarea></label>
+          <div class="field">
+            <span>ფოტოები <small>ახალი ფოტოების არჩევა ჩაანაცვლებს არსებულებს</small></span>
+            <label class="upload" for="edit-photos">
+              <span class="upload-icon">＋</span><strong>ფოტოების შეცვლა (1–4)</strong>
+              <small>JPG, PNG ან WebP · თითოეული მაქს. 10 MB</small>
+              <input id="edit-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+            </label>
+            <div id="edit-preview" class="preview-grid" aria-live="polite"></div>
+          </div>
+          <div id="edit-message" class="message" role="status"></div>
+          <div class="edit-actions">
+            <button id="save-edit" class="primary" type="submit">ცვლილებების შენახვა</button>
+            <button id="delete-product" class="danger" type="button">პროდუქტის წაშლა</button>
+          </div>
+        </form>
+      </section>
+    </section>
     <footer>© NIKOLO BREGA <a href="index.html">საიტზე დაბრუნება</a></footer>
   </main>
 
