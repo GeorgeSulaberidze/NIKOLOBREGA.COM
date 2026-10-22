@@ -16,12 +16,12 @@
     "name": "Leather"
   },
   {
-    "slug": "metals",
-    "name": "Metal"
-  },
-  {
     "slug": "watches",
     "name": "Watches"
+  },
+  {
+    "slug": "metals",
+    "name": "Metal"
   },
   {
     "slug": "accessories",
