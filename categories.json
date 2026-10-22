@@ -12,12 +12,12 @@
     "name": "Leather"
   },
   {
-    "slug": "metals",
-    "name": "Metal"
-  },
-  {
     "slug": "acetate",
     "name": "Acetate"
+  },
+  {
+    "slug": "metals",
+    "name": "Metal"
   },
   {
     "slug": "accessories",
