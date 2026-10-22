@@ -329,13 +329,13 @@
       details.append(name, slug);
       const actions = document.createElement('div'); actions.className = 'category-actions';
       const moveUp = document.createElement('button');
-      moveUp.type = 'button'; moveUp.className = 'secondary category-move'; moveUp.textContent = '↑';
-      moveUp.setAttribute('aria-label', `Move ${category.name} up`);
+      moveUp.type = 'button'; moveUp.className = 'secondary category-move'; moveUp.textContent = '↑ ზემოთ';
+      moveUp.setAttribute('aria-label', `${category.name} ზემოთ გადატანა`);
       moveUp.disabled = index === 0 || categoryOrderSaving;
       moveUp.addEventListener('click', () => moveCategory(category.slug, -1));
       const moveDown = document.createElement('button');
-      moveDown.type = 'button'; moveDown.className = 'secondary category-move'; moveDown.textContent = '↓';
-      moveDown.setAttribute('aria-label', `Move ${category.name} down`);
+      moveDown.type = 'button'; moveDown.className = 'secondary category-move'; moveDown.textContent = '↓ ქვემოთ';
+      moveDown.setAttribute('aria-label', `${category.name} ქვემოთ გადატანა`);
       moveDown.disabled = index === categoriesCache.length - 1 || categoryOrderSaving;
       moveDown.addEventListener('click', () => moveCategory(category.slug, 1));
       const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'secondary'; edit.textContent = 'შეცვლა';

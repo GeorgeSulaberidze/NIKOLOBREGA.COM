@@ -6,3 +6,6 @@
 
 .category-order-hint{font-size:12px;line-height:1.5;color:#77736c;margin:18px 0 -10px}.category-actions .category-move{width:38px;padding:0;font-size:18px;font-weight:700;margin:0;min-height:38px}
 
+
+@media(max-width:520px){.category-actions{flex-direction:row;flex-wrap:wrap;justify-content:flex-end;align-items:center}.category-actions .category-move{width:auto;min-width:74px;padding:0 8px;font-size:12px}}
+
