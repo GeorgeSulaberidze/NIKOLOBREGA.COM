@@ -26,6 +26,7 @@
   let productsCache = [];
   let categoriesCache = [];
   let categoriesLoading = false;
+  let categoryOrderSaving = false;
   let editingProduct = null;
 
   const setMessage = (text, type) => {
@@ -319,7 +320,7 @@
 
   function renderCategoryList() {
     categoryList.replaceChildren();
-    categoriesCache.forEach(category => {
+    categoriesCache.forEach((category, index) => {
       const row = document.createElement('div');
       row.className = 'category-entry';
       const details = document.createElement('div');
@@ -327,6 +328,16 @@
       const slug = document.createElement('small'); slug.textContent = `${category.slug}.html`;
       details.append(name, slug);
       const actions = document.createElement('div'); actions.className = 'category-actions';
+      const moveUp = document.createElement('button');
+      moveUp.type = 'button'; moveUp.className = 'secondary category-move'; moveUp.textContent = '↑';
+      moveUp.setAttribute('aria-label', `Move ${category.name} up`);
+      moveUp.disabled = index === 0 || categoryOrderSaving;
+      moveUp.addEventListener('click', () => moveCategory(category.slug, -1));
+      const moveDown = document.createElement('button');
+      moveDown.type = 'button'; moveDown.className = 'secondary category-move'; moveDown.textContent = '↓';
+      moveDown.setAttribute('aria-label', `Move ${category.name} down`);
+      moveDown.disabled = index === categoriesCache.length - 1 || categoryOrderSaving;
+      moveDown.addEventListener('click', () => moveCategory(category.slug, 1));
       const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'secondary'; edit.textContent = 'შეცვლა';
       edit.addEventListener('click', () => {
         categoryOriginalSlug.value = category.slug;
@@ -340,10 +351,41 @@
       });
       const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'danger'; remove.textContent = 'წაშლა';
       remove.addEventListener('click', () => deleteCategory(category));
-      actions.append(edit, remove);
+      actions.append(moveUp, moveDown, edit, remove);
       row.append(details, actions);
       categoryList.append(row);
     });
+  }
+
+  async function moveCategory(slug, offset) {
+    if (categoryOrderSaving) return;
+    const from = categoriesCache.findIndex(category => category.slug === slug);
+    const to = from + offset;
+    if (from < 0 || to < 0 || to >= categoriesCache.length) return;
+    const token = tokenInput.value.trim();
+    if (!token) return setCategoryMessage('გვერდების თანმიმდევრობის შესაცვლელად შეიყვანეთ GitHub token.', 'error');
+    const previousCategories = categoriesCache;
+    const reordered = [...categoriesCache];
+    [reordered[from], reordered[to]] = [reordered[to], reordered[from]];
+    categoriesCache = reordered;
+    categoryOrderSaving = true;
+    renderCategoryList();
+    try {
+      const latest = await readRepositoryJson(token, 'categories.json');
+      const order = new Map(reordered.map((category, index) => [category.slug, index]));
+      const nextCategories = [...latest].sort((a, b) =>
+        (order.get(a.slug) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.slug) ?? Number.MAX_SAFE_INTEGER));
+      await uploadProduct(token, [{ path: 'categories.json', content: JSON.stringify(nextCategories, null, 2) }], 'Reorder categories');
+      categoriesCache = nextCategories;
+      updateProductCategoryOptions();
+      setCategoryMessage('გვერდების თანმიმდევრობა ყველა გვერდზე შენახულია.', 'success');
+    } catch (error) {
+      categoriesCache = previousCategories;
+      setCategoryMessage(error.message || 'თანმიმდევრობის შენახვა ვერ მოხერხდა.', 'error');
+    } finally {
+      categoryOrderSaving = false;
+      renderCategoryList();
+    }
   }
 
   async function loadCategoryList() {
