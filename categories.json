@@ -1,11 +1,11 @@
 [
   {
-    "slug": "leather",
-    "name": "Leather"
-  },
-  {
     "slug": "woodens",
     "name": "Wooden"
+  },
+  {
+    "slug": "leather",
+    "name": "Leather"
   },
   {
     "slug": "silvers",
