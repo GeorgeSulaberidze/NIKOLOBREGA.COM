@@ -10,11 +10,22 @@
   const editPhotos = document.querySelector('#edit-photos');
   const editPreview = document.querySelector('#edit-preview');
   const editMessage = document.querySelector('#edit-message');
+  const categorySelect = document.querySelector('#category');
+  const categoryForm = document.querySelector('#category-form');
+  const categoryNameInput = document.querySelector('#category-name');
+  const categorySlugInput = document.querySelector('#category-slug');
+  const categoryOriginalSlug = document.querySelector('#category-original-slug');
+  const categoryList = document.querySelector('#category-list');
+  const categoriesMessage = document.querySelector('#categories-message');
+  const saveCategoryButton = document.querySelector('#save-category');
+  const cancelCategoryEditButton = document.querySelector('#cancel-category-edit');
   let selectedFiles = [];
   let slugWasEdited = false;
   let editFiles = [];
   let editImages = [];
   let productsCache = [];
+  let categoriesCache = [];
+  let categoriesLoading = false;
   let editingProduct = null;
 
   const setMessage = (text, type) => {
@@ -197,9 +208,14 @@
   }
 
   async function makeCategoryPageFiles(category, products) {
+    let baseText;
     const baseResponse = await fetch(`${category}.html`, { cache: 'no-store' });
-    if (!baseResponse.ok) throw new Error(`${category}.html კატეგორიის გვერდი ვერ ჩაიტვირთა.`);
-    const baseDocument = new DOMParser().parseFromString(await baseResponse.text(), 'text/html');
+    if (baseResponse.ok) baseText = await baseResponse.text();
+    else {
+      const baseFile = await githubRequest(tokenInput.value.trim(), `contents/${category}.html?ref=${githubBranch}`);
+      baseText = textFromBase64(baseFile.content);
+    }
+    const baseDocument = new DOMParser().parseFromString(baseText, 'text/html');
     const pagePaths = new Map([[1, `${category}.html`]]);
     baseDocument.querySelectorAll('#pagination a[onclick]').forEach(link => {
       const match = link.getAttribute('onclick')?.match(/window\.location\.href\s*=\s*['"]([^'"]+\.html)['"]/i);
@@ -277,6 +293,223 @@
     }
   }
 
+  function setCategoryMessage(text, type) {
+    categoriesMessage.textContent = text;
+    categoriesMessage.className = `message show ${type}`;
+  }
+
+  function categorySlugFromName(value) {
+    return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  }
+
+  function updateProductCategoryOptions() {
+    const selected = categorySelect.value;
+    categorySelect.replaceChildren(...categoriesCache.map(category => new Option(category.name, category.slug)));
+    categorySelect.value = categoriesCache.some(category => category.slug === selected) ? selected : (categoriesCache[0]?.slug || '');
+  }
+
+  function resetCategoryForm() {
+    categoryForm.reset();
+    categoryOriginalSlug.value = '';
+    categorySlugWasEdited = false;
+    saveCategoryButton.textContent = 'გვერდის დამატება';
+    cancelCategoryEditButton.hidden = true;
+    categoriesMessage.className = 'message';
+  }
+
+  function renderCategoryList() {
+    categoryList.replaceChildren();
+    categoriesCache.forEach(category => {
+      const row = document.createElement('div');
+      row.className = 'category-entry';
+      const details = document.createElement('div');
+      const name = document.createElement('strong'); name.textContent = category.name;
+      const slug = document.createElement('small'); slug.textContent = `${category.slug}.html`;
+      details.append(name, slug);
+      const actions = document.createElement('div'); actions.className = 'category-actions';
+      const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'secondary'; edit.textContent = 'შეცვლა';
+      edit.addEventListener('click', () => {
+        categoryOriginalSlug.value = category.slug;
+        categoryNameInput.value = category.name;
+        categorySlugInput.value = category.slug;
+        categorySlugWasEdited = false;
+        saveCategoryButton.textContent = 'შენახვა';
+        cancelCategoryEditButton.hidden = false;
+        categoriesMessage.className = 'message';
+        categoryNameInput.focus();
+      });
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'danger'; remove.textContent = 'წაშლა';
+      remove.addEventListener('click', () => deleteCategory(category));
+      actions.append(edit, remove);
+      row.append(details, actions);
+      categoryList.append(row);
+    });
+  }
+
+  async function loadCategoryList() {
+    if (categoriesLoading) return;
+    categoriesLoading = true;
+    try {
+      let categories;
+      try {
+        const remote = await fetch(`https://raw.githubusercontent.com/${githubOwner}/${githubRepo}/${githubBranch}/categories.json?${Date.now()}`, { cache: 'no-store' });
+        if (!remote.ok) throw new Error(`categories.json: ${remote.status}`);
+        categories = await remote.json();
+      } catch (remoteError) {
+        const local = await fetch(`categories.json?${Date.now()}`, { cache: 'no-store' });
+        if (!local.ok) throw new Error(`Could not load categories.json (${local.status}). ${remoteError.message}`);
+        categories = await local.json();
+      }
+      if (!Array.isArray(categories)) throw new Error('categories.json must contain a list.');
+      categoriesCache = categories;
+      renderCategoryList();
+      updateProductCategoryOptions();
+    } finally {
+      categoriesLoading = false;
+    }
+  }
+
+  async function readRepositoryJson(token, path) {
+    const file = await githubRequest(token, `contents/${path}?ref=${githubBranch}`);
+    return JSON.parse(textFromBase64(file.content));
+  }
+
+  async function listRepositoryFiles(token) {
+    return githubRequest(token, `contents?ref=${githubBranch}`);
+  }
+
+  function renameCategoryPageMarkup(markup, oldSlug, newSlug) {
+    return markup
+      .replace(new RegExp(`(^|[^a-z0-9-])${oldSlug}(\\d+\\.html)`, 'gi'), (_, prefix, suffix) => `${prefix}${newSlug}${suffix}`)
+      .split(`${oldSlug}.html`).join(`${newSlug}.html`)
+      .split(`${oldSlug}-page-`).join(`${newSlug}-page-`);
+  }
+
+  function linkedCategoryPages(html, slug, rootFiles) {
+    const page = new DOMParser().parseFromString(html, 'text/html');
+    const candidates = Array.from(page.querySelectorAll('#pagination a[onclick]')).flatMap(link => {
+      const match = link.getAttribute('onclick')?.match(/(?:window\.location\.href\s*=\s*)['"]([^'"]+\.html)['"]/i);
+      return match ? [match[1].split('/').pop()] : [];
+    });
+    const pagePattern = new RegExp(`^${slug}(?:\\d+|-page-\\d+)\\.html$`, 'i');
+    const existingNames = new Set(rootFiles.filter(file => file.type === 'file').map(file => file.name));
+    return [...new Set(candidates.filter(name => pagePattern.test(name) && existingNames.has(name)))];
+  }
+
+  async function makeEmptyCategoryPage(slug) {
+    const response = await fetch('accessories.html', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Could not load the blank category page template.');
+    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+    page.querySelectorAll('#product1 .pro-container > .pro').forEach(card => card.remove());
+    page.querySelector('#pagination')?.replaceChildren();
+    page.body.dataset.catalogBasePages = '1';
+    if (!Array.from(page.scripts).some(script => /(?:^|\/)catalog\.js(?:\?|$)/i.test(script.getAttribute('src') || ''))) {
+      const script = page.createElement('script'); script.src = 'catalog.js'; page.body.append(script);
+    }
+    page.title = `${slug} | NIKOLO BREGA`;
+    return `<!doctype html>\n${page.documentElement.outerHTML}`;
+  }
+
+  async function deleteCategory(category) {
+    if (!confirm(`მენიუდან წაიშალოს გვერდი „${category.name}“? პროდუქტები შენახული დარჩება, მაგრამ კატეგორიის გვერდზე აღარ გამოჩნდება.`)) return;
+    const token = tokenInput.value.trim();
+    if (!token) return setCategoryMessage('გვერდების შესაცვლელად შეიყვანეთ GitHub token.', 'error');
+    const removeButton = Array.from(categoryList.querySelectorAll('.danger')).find(button => button.textContent === 'წაშლა' && button.closest('.category-entry')?.querySelector('strong')?.textContent === category.name);
+    if (removeButton) removeButton.disabled = true;
+    try {
+      const categories = await readRepositoryJson(token, 'categories.json');
+      if (categories.length <= 1) throw new Error('მინიმუმ ერთი კატეგორიის გვერდი უნდა დარჩეს.');
+      const rootFiles = await listRepositoryFiles(token);
+      const pageFile = await githubRequest(token, `contents/${category.slug}.html?ref=${githubBranch}`);
+      const baseContent = textFromBase64(pageFile.content);
+      const linkedPages = linkedCategoryPages(baseContent, category.slug, rootFiles);
+      const generatedPages = rootFiles.filter(file => file.type === 'file' && new RegExp(`^${category.slug}-page-\\d+\\.html$`, 'i').test(file.name)).map(file => file.name);
+      const relatedPages = [...new Set([...linkedPages, ...generatedPages])];
+      const remaining = categories.filter(item => item.slug !== category.slug);
+      const files = [
+        { path: 'categories.json', content: JSON.stringify(remaining, null, 2) },
+        { path: `${category.slug}.html`, delete: true },
+        ...relatedPages.map(path => ({ path, delete: true }))
+      ];
+      await uploadProduct(token, files, `Delete category ${category.slug}`);
+      categoriesCache = remaining;
+      renderCategoryList(); updateProductCategoryOptions(); resetCategoryForm();
+      setCategoryMessage(`გვერდი „${category.name}“ წაიშალა.`, 'success');
+    } catch (error) {
+      setCategoryMessage(error.message || 'გვერდის წაშლა ვერ მოხერხდა.', 'error');
+    } finally {
+      if (removeButton) removeButton.disabled = false;
+    }
+  }
+
+  let categorySlugWasEdited = false;
+  categoryNameInput.addEventListener('input', () => {
+    if (!categorySlugWasEdited) categorySlugInput.value = categorySlugFromName(categoryNameInput.value);
+  });
+  categorySlugInput.addEventListener('input', () => { categorySlugWasEdited = true; });
+  cancelCategoryEditButton.addEventListener('click', resetCategoryForm);
+
+  categoryForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const token = tokenInput.value.trim();
+    if (!token) return setCategoryMessage('გვერდების შესაცვლელად შეიყვანეთ GitHub token.', 'error');
+    const name = categoryNameInput.value.trim();
+    const slug = categorySlugInput.value.trim().toLowerCase();
+    const oldSlug = categoryOriginalSlug.value;
+    if (!name || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      return setCategoryMessage('შეიყვანეთ გვერდის სახელი და მისამართი ლათინური პატარა ასოებით, ციფრებით ან დეფისით.', 'error');
+    }
+    saveCategoryButton.disabled = true;
+    try {
+      const categories = await readRepositoryJson(token, 'categories.json');
+      if (categories.some(category => category.slug === slug && category.slug !== oldSlug)) {
+        throw new Error('ეს გვერდის მისამართი უკვე გამოყენებულია.');
+      }
+      const rootFiles = await listRepositoryFiles(token);
+      const newPagePath = `${slug}.html`;
+      if (slug !== oldSlug && rootFiles.some(file => file.type === 'file' && file.name.toLowerCase() === newPagePath.toLowerCase())) {
+        throw new Error('ამ მისამართით ფაილი უკვე არსებობს.');
+      }
+      const nextCategories = oldSlug
+        ? categories.map(category => category.slug === oldSlug ? { slug, name } : category)
+        : [...categories, { slug, name }];
+      const files = [{ path: 'categories.json', content: JSON.stringify(nextCategories, null, 2) }];
+
+      if (!oldSlug) {
+        files.push({ path: newPagePath, content: await makeEmptyCategoryPage(slug) });
+      } else if (slug !== oldSlug) {
+        const oldPageFile = await githubRequest(token, `contents/${oldSlug}.html?ref=${githubBranch}`);
+        const oldPageContent = textFromBase64(oldPageFile.content);
+        const renamedContent = renameCategoryPageMarkup(oldPageContent, oldSlug, slug);
+        files.push({ path: newPagePath, content: renamedContent }, { path: `${oldSlug}.html`, delete: true });
+        const linkedPages = linkedCategoryPages(oldPageContent, oldSlug, rootFiles);
+        const generatedPages = rootFiles.filter(file => file.type === 'file' && new RegExp(`^${oldSlug}-page-\\d+\\.html$`, 'i').test(file.name)).map(file => file.name);
+        const relatedPages = [...new Set([...linkedPages, ...generatedPages])];
+        for (const pagePath of relatedPages) {
+          const oldPage = await githubRequest(token, `contents/${pagePath}?ref=${githubBranch}`);
+          const pageContent = renameCategoryPageMarkup(textFromBase64(oldPage.content), oldSlug, slug);
+          const nextPath = pagePath.replace(new RegExp(`^${oldSlug}`, 'i'), slug);
+          files.push({ path: nextPath, content: pageContent }, { path: pagePath, delete: true });
+        }
+        const products = await readRepositoryJson(token, 'products.json');
+        let productsChanged = false;
+        products.forEach(product => {
+          if (product.category === oldSlug) { product.category = slug; productsChanged = true; }
+        });
+        if (productsChanged) files.push({ path: 'products.json', content: JSON.stringify(products, null, 2) });
+      }
+
+      await uploadProduct(token, files, oldSlug ? `Update category ${slug}` : `Add category ${slug}`);
+      categoriesCache = nextCategories;
+      renderCategoryList(); updateProductCategoryOptions(); resetCategoryForm();
+      setCategoryMessage(oldSlug ? `გვერდი „${name}“ შენახულია.` : `გვერდი „${name}“ დაემატა.`, 'success');
+    } catch (error) {
+      setCategoryMessage(error.message || 'გვერდის შენახვა ვერ მოხერხდა.', 'error');
+    } finally {
+      saveCategoryButton.disabled = false;
+    }
+  });
+
   function renderEditPreview() {
     editPreview.replaceChildren();
     const sources = [
@@ -325,25 +558,32 @@
   tokenInput.addEventListener('input', updateEditLock);
 
   function activateAdminPanel(panelId) {
-    const target = panelId === 'edit-panel' ? 'edit-panel' : 'upload-panel';
+    const target = ['edit-panel', 'categories-panel'].includes(panelId) ? panelId : 'upload-panel';
     document.querySelectorAll('[data-admin-panel]').forEach(item => item.classList.toggle('active', item.dataset.adminPanel === target));
-    document.querySelectorAll('#upload-panel, #edit-panel').forEach(panel => { panel.hidden = panel.id !== target; });
+    document.querySelectorAll('#upload-panel, #edit-panel, #categories-panel').forEach(panel => { panel.hidden = panel.id !== target; });
     if (target === 'edit-panel' && !productsCache.length) {
       loadProductsForEdit().catch(error => setEditMessage(error.message, 'error'));
+    }
+    if (target === 'categories-panel' && !categoriesCache.length) {
+      loadCategoryList().catch(error => setCategoryMessage(error.message, 'error'));
     }
   }
 
   document.querySelectorAll('[data-admin-panel]').forEach(button => button.addEventListener('click', () => {
     activateAdminPanel(button.dataset.adminPanel);
     const url = new URL(window.location.href);
-    url.searchParams.set('section', button.dataset.adminPanel === 'edit-panel' ? 'edit' : 'upload');
+    url.searchParams.set('section', button.dataset.adminPanel === 'edit-panel' ? 'edit'
+      : button.dataset.adminPanel === 'categories-panel' ? 'categories' : 'upload');
     history.replaceState(null, '', url);
   }));
   const initialUrl = new URL(window.location.href);
-  if (initialUrl.searchParams.get('section') === 'edit' || ['#edit', '#edit-panel'].includes(initialUrl.hash)) {
+  if (initialUrl.searchParams.get('section') === 'categories') {
+    activateAdminPanel('categories-panel');
+  } else if (initialUrl.searchParams.get('section') === 'edit' || ['#edit', '#edit-panel'].includes(initialUrl.hash)) {
     activateAdminPanel('edit-panel');
   }
   updateEditLock();
+  loadCategoryList().catch(error => setMessage(error.message, 'error'));
   document.querySelector('#refresh-products').addEventListener('click', async event => {
     event.currentTarget.disabled = true;
     try { await loadProductsForEdit(); setEditMessage('პროდუქტების სია განახლდა.', 'success'); }

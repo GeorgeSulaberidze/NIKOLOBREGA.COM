@@ -23,6 +23,7 @@
     <nav class="admin-nav" aria-label="ადმინის განყოფილებები">
       <button type="button" class="active" data-admin-panel="upload-panel">ატვირთვა</button>
       <button type="button" data-admin-panel="edit-panel">კორექტირება</button>
+      <button type="button" data-admin-panel="categories-panel">მთავარი გვერდები</button>
     </nav>
 
     <section id="upload-panel">
@@ -38,7 +39,7 @@
         <select id="category" required>
           <option value="leather">leather</option><option value="silvers">silvers</option>
           <option value="metals">metals</option><option value="woodens">woodens</option>
-          <option value="acetate">acetate</option><option value="plastics">plastics</option>
+          <option value="acetate">acetate</option><option value="accessories">Accessories</option>
           <option value="watches">watches</option>
         </select>
       </label>
@@ -112,6 +113,26 @@
             <button id="delete-product" class="danger" type="button">პროდუქტის წაშლა</button>
           </div>
         </form>
+      </section>
+    </section>
+    <section id="categories-panel" hidden>
+      <section class="intro">
+        <div class="eyebrow">მთავარი მენიუ</div>
+        <h1>მთავარი გვერდების მართვა</h1>
+        <p>დაამატეთ, გადაარქვით სახელი ან წაშალეთ პროდუქტის კატეგორიის გვერდები.</p>
+      </section>
+      <section class="form-card">
+        <form id="category-form">
+          <input id="category-original-slug" type="hidden">
+          <label class="field"><span>გვერდის სახელი</span><input id="category-name" maxlength="40" required placeholder="Accessories"></label>
+          <label class="field"><span>გვერდის მისამართი</span><input id="category-slug" maxlength="40" pattern="[a-z0-9]+(-[a-z0-9]+)*" required placeholder="accessories"></label>
+          <div id="categories-message" class="message" role="status"></div>
+          <div class="edit-actions">
+            <button id="save-category" class="primary" type="submit">გვერდის დამატება</button>
+            <button id="cancel-category-edit" class="secondary" type="button" hidden>გაუქმება</button>
+          </div>
+        </form>
+        <div id="category-list" class="category-list" aria-live="polite"></div>
       </section>
     </section>
     <footer>© NIKOLO BREGA <a href="index.html">საიტზე დაბრუნება</a></footer>

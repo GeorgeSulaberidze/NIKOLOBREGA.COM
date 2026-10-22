@@ -1,6 +1,19 @@
 /* Combines static catalog items and admin products into pages of 20. */
 (async function () {
-  const categories = ['leather', 'silvers', 'metals', 'woodens', 'acetate', 'plastics', 'watches'];
+  let categories;
+  try {
+    let categoryResponse;
+    try {
+      categoryResponse = await fetch(`https://raw.githubusercontent.com/GeorgeSulaberidze/NIKOLOBREGA.COM/main/categories.json?${Date.now()}`, { cache: 'no-store' });
+    } catch {
+      categoryResponse = await fetch('categories.json', { cache: 'no-store' });
+    }
+    if (!categoryResponse.ok) categoryResponse = await fetch('categories.json', { cache: 'no-store' });
+    if (!categoryResponse.ok) return;
+    categories = (await categoryResponse.json()).map(category => category.slug);
+  } catch {
+    return;
+  }
   const currentFile = location.pathname.split('/').pop().replace(/\.html$/i, '');
   const category = categories.find(name => currentFile === name
     || new RegExp(`^${name}(?:\\d+|-page-\\d+)$`, 'i').test(currentFile));

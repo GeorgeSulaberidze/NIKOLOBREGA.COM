@@ -1,0 +1,9 @@
+[
+  { "slug": "leather", "name": "Leather" },
+  { "slug": "silvers", "name": "Silver" },
+  { "slug": "metals", "name": "Metal" },
+  { "slug": "woodens", "name": "Wooden" },
+  { "slug": "acetate", "name": "Acetate" },
+  { "slug": "accessories", "name": "Accessories" },
+  { "slug": "watches", "name": "Watches" }
+]

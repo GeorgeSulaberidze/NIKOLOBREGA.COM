@@ -2,6 +2,12 @@ const bar = document.getElementById('bar');
 const close = document.getElementById('close');
 const nav = document.getElementById('navbar');
 
+if (nav) {
+    const categoriesScript = document.createElement('script');
+    categoriesScript.src = 'categories.js';
+    document.body.append(categoriesScript);
+}
+
 const pendingImages = [];
 let imageLoadActive = false;
 let loadingMessageTimer = null;
