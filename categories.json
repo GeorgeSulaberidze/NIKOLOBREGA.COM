@@ -20,11 +20,11 @@
     "name": "Metal"
   },
   {
-    "slug": "accessories",
-    "name": "Accessories"
-  },
-  {
     "slug": "watches",
     "name": "Watches"
+  },
+  {
+    "slug": "accessories",
+    "name": "Accessories"
   }
 ]
