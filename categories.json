@@ -8,12 +8,12 @@
     "name": "Silver"
   },
   {
-    "slug": "leather",
-    "name": "Leather"
-  },
-  {
     "slug": "acetate",
     "name": "Acetate"
+  },
+  {
+    "slug": "leather",
+    "name": "Leather"
   },
   {
     "slug": "metals",
