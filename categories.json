@@ -4,12 +4,12 @@
     "name": "Leather"
   },
   {
-    "slug": "silvers",
-    "name": "Silver"
-  },
-  {
     "slug": "woodens",
     "name": "Wooden"
+  },
+  {
+    "slug": "silvers",
+    "name": "Silver"
   },
   {
     "slug": "metals",
