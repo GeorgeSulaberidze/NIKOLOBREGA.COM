@@ -1,5 +1,18 @@
 [
   {
+    "slug": "rock-one",
+    "name": "ROCK ONE",
+    "category": "accessories",
+    "price": "399",
+    "images": [
+      "CATALOG/rock-one-1.jpg",
+      "CATALOG/rock-one-2.jpg",
+      "CATALOG/rock-one-3.jpg"
+    ],
+    "description": "მხოლოდ ერთი ეგზემპლარი. აღარ განმეორდება.\n\n• მასალა: ვერცხლი\n• დამზადებულია ხელით\n• ექსკლუზიური, უნიკალური დიზაინი\n• ზომები: 16 / 17 / 18 / 19 / 20\n\nმათთვის, ვინც ირჩევს არა მასობრივ წარმოებას, არამედ ინდივიდუალობას, ხასიათსა და ნამდვილ ხელოვნებას.\n\nOnly one piece. Never to be repeated.\n\n• Material: Silver\n• Handmade\n• Exclusive, unique design\n• Sizes: 16 / 17 / 18 / 19 / 20\n\nFor those who choose individuality, character, and true artistry over mass production.",
+    "createdAt": "2026-10-23T09:40:23.945Z"
+  },
+  {
     "slug": "requiem",
     "name": "REQUIEM",
     "category": "woodens",
