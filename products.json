@@ -1,5 +1,18 @@
 [
   {
+    "slug": "volcano-one",
+    "name": "VOLCANO ONE",
+    "category": "accessories",
+    "price": "699",
+    "images": [
+      "CATALOG/volcano-one-1.jpg",
+      "CATALOG/volcano-one-2.jpg",
+      "CATALOG/volcano-one-3.jpg"
+    ],
+    "description": "მხოლოდ ერთი ეგზემპლარი. აღარ განმეორდება.\n\n• მასალა: ვერცხლი\n• დამზადებულია ხელით\n• ექსკლუზიური, უნიკალური დიზაინი\n• ზომები: 16 / 17 / 18 / 19 / 20\n\nმათთვის, ვინც ირჩევს არა მასობრივ წარმოებას, არამედ ინდივიდუალობას, ხასიათსა და ნამდვილ ხელოვნებას.\n\nOnly one piece. Never to be repeated.\n\n• Material: Silver\n• Handmade\n• Exclusive, unique design\n• Sizes: 16 / 17 / 18 / 19 / 20\n\nFor those who choose individuality, character, and true artistry over mass production.",
+    "createdAt": "2026-10-23T09:51:23.949Z"
+  },
+  {
     "slug": "rock-one",
     "name": "ROCK ONE",
     "category": "accessories",
